@@ -6,91 +6,99 @@ global TRIALINFO;
 global CAMERA;
 global STARFIELD;
 global STARDATA;
+global SCREEN
 
 % Restrict KbCheck to checking of ESCAPE key:
 KbName('UnifyKeynames');
 escape = KbName('ESCAPE');
 
 %% trial information
-TRIALINFO.camera2screenDist = 60;%cm
-TRIALINFO.screenWidthCM= 120; %cm
-TRIALINFO.screenHeightCM = 65; %cm
+coordinateMuilty = 5; % convert cm to coordinate system for moving distance
+SCREEN.distance = 60;% cm
+SCREEN.widthCM= 120; % cm
+SCREEN.heightCM = 65; % cm
 
 TRIALINFO.repeatNum =3;
-TRIALINFO.motionType = 3 ;
-TRIALINFO.move_time = 1; %second
-TRIALINFO.star_move_heading = 0 ; %degree
-TRIALINFO.star_rotation_degree = 30;%% the degree of the star' rotation
-% TRIALINFO.fixMoveDirection = [-1 1];
-TRIALINFO.star_coherence = 100;
-TRIALINFO.fixzationSpeed =10;   %% 10бу/s
-TRIALINFO.star_move_speed = 50; % cm/s
-TRIALINFO.fixzationSize = 0.25;  % degree
+TRIALINFO.motionType = [1 2 3 4];
+TRIALINFO.preMoveDuration = 0.2; % s
+TRIALINFO.moveDuration = 1; % second
+TRIALINFO.headingDegree = 0 ; % degree
+TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 
+TRIALINFO.rotationDegree = 30; % the degree of the star' rotation
+TRIALINFO.rotationSpeed = 10;  % бу/s
+TRIALINFO.coherence = 100;
 
+TRIALINFO.fixMoveDirection = [-1 1];
+TRIALINFO.fixzationSizeD = 0.25;  % degree
+TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 
 %% the information of the stars
-STARFIELD.demensionX = 400;  % cm
-STARFIELD.demensionY = 400;  % cm
-STARFIELD.demensionZ = 40;   % cm
+STARFIELD.demensionX = 400*coordinateMuilty;  % cm
+STARFIELD.demensionY = 400*coordinateMuilty;  % cm
+STARFIELD.demensionZ = 40*coordinateMuilty;   % cm
 STARFIELD.StarSize = 0.2;    % cm
 STARFIELD.Density = 0.01;    % num/cm^3
-STARFIELD.Probability = TRIALINFO.star_coherence;
+STARFIELD.Probability = TRIALINFO.coherence;
 
 %% parameter for camera
 CAMERA.elevation = 0; % unit cm, average height of a human
-CAMERA.distance = TRIALINFO.camera2screenDist; % unit cm, distance from participant to the screen
-CAMERA.sightDegreeVer = atand(TRIALINFO.screenHeightCM * 0.5 / CAMERA.distance)*2; % degree of view field on vertical
-CAMERA.sightDegreeHor = atand(TRIALINFO.screenWidthCM * 0.5 / CAMERA.distance)*2; % degree of view field on horizon
+CAMERA.distance = SCREEN.distance; % unit cm, distance from participant to the screen
+CAMERA.sightDegreeVer = atand(SCREEN.heightCM * 0.5 / CAMERA.distance)*2; % degree of view field on vertical
+CAMERA.sightDegreeHor = atand(SCREEN.widthCM * 0.5 / CAMERA.distance)*2; % degree of view field on horizon
 
 global GL;
 AssertOpenGL;
 InitializeMatlabOpenGL;
 
-TRIALINFO.screenId = max(Screen('Screens'))-1;
+SCREEN.screenId = max(Screen('Screens'))-1;
 PsychImaging('PrepareConfiguration');
-Screen('Preference', 'SkipSyncTests', 1);
+
+Screen('Preference', 'SkipSyncTests', 1); % for debug/test
+% Screen('Preference', 'SkipSyncTests', 0); % for experiment
+
 % Open a double-buffered full-screen window on the main displays screen.
-[win, winRect] = PsychImaging('OpenWindow', TRIALINFO.screenId, 0, [], [], [], 0, 0);
-TRIALINFO.screenWidthPIX = winRect(3);
-TRIALINFO.screenHeightPIX = winRect(4);
-TRIALINFO.pixInDegree = TRIALINFO.screenWidthPIX/CAMERA.sightDegreeVer;
-TRIALINFO.cmInDegree = TRIALINFO.screenWidthCM/CAMERA.sightDegreeVer;
+[win, winRect] = PsychImaging('OpenWindow', SCREEN.screenId, 0, [], [], [], 0, 0);
+SCREEN.widthPix = winRect(3);
+SCREEN.heightPix = winRect(4);
+SCREEN.pixInDegree = SCREEN.screenWidthPix/CAMERA.sightDegreeVer;
+SCREEN.cmInDegree = SCREEN.screenWidthCM/CAMERA.sightDegreeVer;
 
-TRIALINFO.star_move_distance = TRIALINFO.star_move_speed * TRIALINFO.move_time ;  % cm
-TRIALINFO.fix_move_distance = TRIALINFO.fixzationSpeed * TRIALINFO.move_time * TRIALINFO.cmInDegree;  % cm
-TRIALINFO.fixzationSize= ceil(TRIALINFO.fixzationSize*TRIALINFO.pixInDegree);
+TRIALINFO.fixationSize = degree2pix(TRIALINFO.fixationSizeD); % pixel
+TRIALINFO.fix_move_distance = degree2pix(TRIALINFO.rotationSpeed * TRIALINFO.moveDuration);  % pixel
 
-TRIALINFO.refreshRate = round(Screen('FrameRate', win ));
+SCREEN.refreshRate = Screen('NominalFrameRate', screenId);
 
 %% the configuration of the Frustum
-FRUSTUM.clipNear = 50;
-FRUSTUM.clipFar = 150;
-FRUSTUM.top = (FRUSTUM.clipNear / TRIALINFO.camera2screenDist) * (TRIALINFO.screenHeightCM / 2.0);
-FRUSTUM.bottom = (FRUSTUM.clipNear / TRIALINFO.camera2screenDist) * (-TRIALINFO.screenHeightCM / 2.0);
-FRUSTUM.right = (FRUSTUM.clipNear / TRIALINFO.camera2screenDist) * (TRIALINFO.screenWidthCM / 2.0 );
-FRUSTUM.left = (FRUSTUM.clipNear / TRIALINFO.camera2screenDist) * (-TRIALINFO.screenWidthCM / 2.0 );
+FRUSTUM.clipNear = SCREEN.distance; % cm
+FRUSTUM.clipFar = 150; % cm
+FRUSTUM.top = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.heightCM / 2.0);
+FRUSTUM.bottom = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.heightCM / 2.0);
+FRUSTUM.right = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.widthCM / 2.0 );
+FRUSTUM.left = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.widthCM / 2.0 );
 
 
 Screen('BeginOpenGL', win);
 glViewport(0, 0, RectWidth(winRect), RectHeight(winRect));
 glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
+glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
 Screen('EndOpenGL', win);
 
 %% trial num and order
+conditions = calculateConditions();
 if(TRIALINFO.motionType<3) %% fixation point is stable and the starts are moving directly ||  %% fixation point is moving directly and the starts are moving directly
-    TRIALINFO.trial_num = length(TRIALINFO.star_move_heading)*TRIALINFO.repeatNum;
-    heading_init = repmat(TRIALINFO.star_move_heading,1,TRIALINFO.repeatNum); %%% heading for star's movement
+    TRIALINFO.trial_num = length(TRIALINFO.headingDegree)*TRIALINFO.repeatNum;
+    heading_init = repmat(TRIALINFO.headingDegree,1,TRIALINFO.repeatNum); %%% heading for star's movement
     order = randperm(TRIALINFO.trial_num);
     TRIALINFO.headings_order = heading_init(order);%% real heading order
 else%% fixation point is moving directly and the starts are rotating || %% fixation point is stable and the starts are rotating
     
-    TRIALINFO.trial_num = length(TRIALINFO.star_move_heading)*TRIALINFO.repeatNum;
-    heading_init = repmat(TRIALINFO.star_move_heading,1,TRIALINFO.repeatNum); %%% heading for star's movement
+    TRIALINFO.trial_num = length(TRIALINFO.headingDegree)*TRIALINFO.repeatNum;
+    heading_init = repmat(TRIALINFO.headingDegree,1,TRIALINFO.repeatNum); %%% heading for star's movement
     order = randperm(TRIALINFO.trial_num);
     TRIALINFO.headings_order = heading_init(order);%% real heading order
     
-    rotation_init = repmat(TRIALINFO.star_rotation_degree,1,TRIALINFO.repeatNum); %%% rotation degree for star's movement
+    rotation_init = repmat(TRIALINFO.rotationDegree,1,TRIALINFO.repeatNum); %%% rotation degree for star's movement
     TRIALINFO.rotationDegree_order = rotation_init(order);%% real heading order
 end
 
@@ -114,24 +122,24 @@ for i =1:TRIALINFO.trial_num
     else
         trialCondition(1) = TRIALINFO.headings_order(i);
         trialCondition(2) = TRIALINFO.star_move_distance;
-        trialCondition(3) = TRIALINFO.star_rotation_degree;
+        trialCondition(3) = TRIALINFO.rotationDegree;
         
         trialCondition(4) = TRIALINFO.fix_move_distance;
-        trialCondition(5) = TRIALINFO.move_time;
+        trialCondition(5) = TRIALINFO.moveDuration;
     end
     if( TRIALINFO.motionType == 1 ) %% fixation point is stable and the starts are moving directly
-        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.move_time);
+        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.moveDuration,SCREEN.refreshRate);
     elseif(TRIALINFO.motionType == 2)%% fixation point is moving directly and the starts are moving directly
-        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.move_time);
+        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.moveDuration,SCREEN.refreshRate);
         if(trialCondition(1)<90)
             towards = 1;
         else
             towards = -1;
         end
-        [fixX,fixY,fixZ] = calculateLinearMovementForFix(TRIALINFO.fix_move_distance,TRIALINFO.move_time,towards);
+        [fixX,fixY,fixZ] = calculateLinearMovementForFix(TRIALINFO.fix_move_distance,TRIALINFO.moveDuration,towards);
     elseif(TRIALINFO.motionType == 3)%% fixation point is stable and the starts are rotating
 % % %         [Lateral,Heave,Surge,fX,fY,fZ] = cameraRotation(trialCondition);
-        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.move_time);
+        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.moveDuration,SCREEN.refreshRate);
        [rotationAngle,rotVector]= CalculateRotationMovement(90,0,trialCondition(3),trialCondition(5));
     else %% fixation point is moving directly and the starts are rotating
         [Lateral,Surge,Heave,fX,fY,fZ] = cameraRotation(trialCondition);
@@ -140,7 +148,7 @@ for i =1:TRIALINFO.trial_num
         else
             towards = -1;
         end
-        [fixX,fixY,fixZ] = calculateLinearMovementForFix(TRIALINFO.fix_move_distance,TRIALINFO.move_time,towards);
+        [fixX,fixY,fixZ] = calculateLinearMovementForFix(TRIALINFO.fix_move_distance,TRIALINFO.moveDuration,towards);
     end
    
     Screen('FillOval', win, [255 0 0 255], fixation_position);
@@ -172,9 +180,7 @@ for i =1:TRIALINFO.trial_num
         glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
         glMatrixMode(GL.PROJECTION);
         glLoadIdentity;
-        
-        glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
-        
+               
         glMatrixMode(GL.MODELVIEW);
         glLoadIdentity;
         gluLookAt(Laterali, 0.0-Heavei, CAMERA.distance-Surgei,Laterali,......
