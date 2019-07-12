@@ -8,41 +8,54 @@ global STARFIELD;
 global STARDATA;
 global SCREEN
 
-% Restrict KbCheck to checking of ESCAPE key:
-KbName('UnifyKeynames');
-escape = KbName('ESCAPE');
+% set keyboard
+KbName('UnifyKeyNames'); 
+skipKey = KbName('space');
+escape = KbName('f1');
+leftArror = KbName('LeftArrow');
+rightArror = KbName('RightArrow');
+upArror = KbName('UpArrow');
+cKey = KbName('c');
 
-%% trial information
+testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
+
+%% parameters
 coordinateMuilty = 5; % convert cm to coordinate system for moving distance
-SCREEN.distance = 60;% cm
-SCREEN.widthCM= 120; % cm
-SCREEN.heightCM = 65; % cm
+SCREEN.distance = 60*coordinateMuilty;% cm
+SCREEN.widthCM= 120*coordinateMuilty; % cm
+SCREEN.heightCM = 65*coordinateMuilty; % cm
 
-TRIALINFO.repeatNum =3;
-TRIALINFO.motionType = [1 2 3 4];
-TRIALINFO.preMoveDuration = 0.2; % s
+TRIALINFO.repetition =3;
+TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
+TRIALINFO.preMoveDuration = 0.2; % second
 TRIALINFO.moveDuration = 1; % second
 TRIALINFO.headingDegree = 0 ; % degree
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
-
-TRIALINFO.rotationDegree = 30; % the degree of the star' rotation
-TRIALINFO.rotationSpeed = 10;  % ¡ã/s
 TRIALINFO.coherence = 100;
-
-TRIALINFO.fixMoveDirection = [-1 1];
 TRIALINFO.fixzationSizeD = 0.25;  % degree
+TRIALINFO.intertrialInterval = 1; % second
+
+% for motion type 3
+TRIALINFO.rotationDegree = 10; % ¡ã£¬the degree of the star' rotation
+TRIALINFO.rotationSpeed = 10;  % ¡ã/s
+
+% for motion type 2 and 4
+TRIALINFO.fixMoveDirection = [1 3]; % only for motion type 2 and 4. 1: left to right; 2: constant at the center; 3: right to left;
+TRIALINFO.fixationDegree = 4; % degree ¡À to center
+TRIALINFO.fixationInitialDegree = 5; % degree ¡À to center
 TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 
-%% the information of the stars
+% parameters for the star field
 STARFIELD.demensionX = 400*coordinateMuilty;  % cm
 STARFIELD.demensionY = 400*coordinateMuilty;  % cm
-STARFIELD.demensionZ = 40*coordinateMuilty;   % cm
-STARFIELD.StarSize = 0.2;    % cm
-STARFIELD.Density = 0.01;    % num/cm^3
-STARFIELD.Probability = TRIALINFO.coherence;
+STARFIELD.demensionZ = 400*coordinateMuilty;  % cm
+STARFIELD.starSize = 0.1;    % degree
+STARFIELD.density = 1000/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
+STARFIELD.probability = TRIALINFO.coherence;
 
-%% parameter for camera
-CAMERA.elevation = 0; % unit cm, average height of a human
+% parameters for the camera
+CAMERA.elevation = 0*coordinateMuilty; % unit cm, average height of a human
 CAMERA.distance = SCREEN.distance; % unit cm, distance from participant to the screen
 CAMERA.sightDegreeVer = atand(SCREEN.heightCM * 0.5 / CAMERA.distance)*2; % degree of view field on vertical
 CAMERA.sightDegreeHor = atand(SCREEN.widthCM * 0.5 / CAMERA.distance)*2; % degree of view field on horizon
@@ -54,8 +67,11 @@ InitializeMatlabOpenGL;
 SCREEN.screenId = max(Screen('Screens'))-1;
 PsychImaging('PrepareConfiguration');
 
-Screen('Preference', 'SkipSyncTests', 1); % for debug/test
-% Screen('Preference', 'SkipSyncTests', 0); % for experiment
+if testMode
+    Screen('Preference', 'SkipSyncTests', 1); % for debug/test
+else
+    Screen('Preference', 'SkipSyncTests', 0); % for recording
+end
 
 % Open a double-buffered full-screen window on the main displays screen.
 [win, winRect] = PsychImaging('OpenWindow', SCREEN.screenId, 0, [], [], [], 0, 0);
@@ -65,13 +81,15 @@ SCREEN.pixInDegree = SCREEN.screenWidthPix/CAMERA.sightDegreeVer;
 SCREEN.cmInDegree = SCREEN.screenWidthCM/CAMERA.sightDegreeVer;
 
 TRIALINFO.fixationSize = degree2pix(TRIALINFO.fixationSizeD); % pixel
-TRIALINFO.fix_move_distance = degree2pix(TRIALINFO.rotationSpeed * TRIALINFO.moveDuration);  % pixel
+TRIALINFO.fixationPosition{1} = [SCREEN.widthPix/2-degree2pix(TRIALINFO.fixationDegree,1),SCREEN.heightPix/2];
+TRIALINFO.fixationPosition{2} = [SCREEN.widthPix/2,SCREEN.heightPix/2];
+TRIALINFO.fixationPosition{3} = [SCREEN.widthPix/2+degree2pix(TRIALINFO.fixationDegree,1),SCREEN.heightPix/2];
 
 SCREEN.refreshRate = Screen('NominalFrameRate', screenId);
 
 %% the configuration of the Frustum
 FRUSTUM.clipNear = SCREEN.distance; % cm
-FRUSTUM.clipFar = 150; % cm
+FRUSTUM.clipFar = 150*coordinateMuilty; % cm
 FRUSTUM.top = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.heightCM / 2.0);
 FRUSTUM.bottom = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.heightCM / 2.0);
 FRUSTUM.right = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.widthCM / 2.0 );
@@ -84,83 +102,58 @@ glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
 glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
 Screen('EndOpenGL', win);
 
-%% trial num and order
-conditions = calculateConditions();
-if(TRIALINFO.motionType<3) %% fixation point is stable and the starts are moving directly ||  %% fixation point is moving directly and the starts are moving directly
-    TRIALINFO.trial_num = length(TRIALINFO.headingDegree)*TRIALINFO.repeatNum;
-    heading_init = repmat(TRIALINFO.headingDegree,1,TRIALINFO.repeatNum); %%% heading for star's movement
-    order = randperm(TRIALINFO.trial_num);
-    TRIALINFO.headings_order = heading_init(order);%% real heading order
-else%% fixation point is moving directly and the starts are rotating || %% fixation point is stable and the starts are rotating
-    
-    TRIALINFO.trial_num = length(TRIALINFO.headingDegree)*TRIALINFO.repeatNum;
-    heading_init = repmat(TRIALINFO.headingDegree,1,TRIALINFO.repeatNum); %%% heading for star's movement
-    order = randperm(TRIALINFO.trial_num);
-    TRIALINFO.headings_order = heading_init(order);%% real heading order
-    
-    rotation_init = repmat(TRIALINFO.rotationDegree,1,TRIALINFO.repeatNum); %%% rotation degree for star's movement
-    TRIALINFO.rotationDegree_order = rotation_init(order);%% real heading order
-end
+%% trial conditions and order
+[TRIALINFO.trialConditions,conditionIndex] = calculateConditions();
+trialIndex = repmat(conditionIndex, TRIALINFO.repetition,1);
+trialNum = size(trialIndex,1);
+trialOrder = randperm(trialNum);
 
-fixation_position = [TRIALINFO.screenWidthPIX/2-TRIALINFO.fixzationSize TRIALINFO.screenHeightPIX/2-TRIALINFO.fixzationSize TRIALINFO.screenWidthPIX/2+TRIALINFO.fixzationSize TRIALINFO.screenHeightPIX/2+TRIALINFO.fixzationSize];
+GenerateStarField();
 
-GenerateStarFiled(STARFIELD.demensionX,STARFIELD.demensionY,STARFIELD.demensionZ,STARFIELD.StarSize,STARFIELD.Density);
-fixX = [];
+% calculate for the position of fixation point
+[fixX,fixY] = calculateFixation();
 
-for i =1:TRIALINFO.trial_num
+for i =1:trialNum
+    motionTypeI = conditionIndex(trialOrder(i),1);
     
-    [ keyIsDown, seconds, keyCode ] = KbCheck;
+    [ ~, ~, keyCode] = KbCheck;
     if keyCode(escape)
         break;
     end
     
-     Screen('FillRect', win ,[0 0 0],[0 0 TRIALINFO.screenWidthPIX TRIALINFO.screenHeightPIX]);
-  
-    trialCondition = zeros(1,5);
-    if(TRIALINFO.motionType<3)
-        trialCondition(1) = TRIALINFO.headings_order(i);
+    % White during the inter-trial intervals
+    Screen('FillRect', win ,[0 0 0],[0 0 SCREEN.widthPix SCREEN.heightPix]);
+    Screen('Flip', win,0,0);
+    trialInterval = tic;
+    
+    % calculate for pre-movement
+    [pglX,pglY,pglZ,pfX,pfY,pfZ] = calculatePreMove();
+    
+    % calculate for movement
+    [glX,glY,glZ,fX,fY,fZ] = calculateMovement(motionTypeI);
+    
+    if motionTypeI == 4
+        fixationType = 2;
     else
-        trialCondition(1) = TRIALINFO.headings_order(i);
-        trialCondition(2) = TRIALINFO.star_move_distance;
-        trialCondition(3) = TRIALINFO.rotationDegree;
-        
-        trialCondition(4) = TRIALINFO.fix_move_distance;
-        trialCondition(5) = TRIALINFO.moveDuration;
+        fixationType = TRIALINFO.trialConditions{conditionIndex(trialOrder(i),1)}(conditionIndex(trialOrder(i),2),4);
     end
-    if( TRIALINFO.motionType == 1 ) %% fixation point is stable and the starts are moving directly
-        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.moveDuration,SCREEN.refreshRate);
-    elseif(TRIALINFO.motionType == 2)%% fixation point is moving directly and the starts are moving directly
-        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.moveDuration,SCREEN.refreshRate);
-        if(trialCondition(1)<90)
-            towards = 1;
-        else
-            towards = -1;
-        end
-        [fixX,fixY,fixZ] = calculateLinearMovementForFix(TRIALINFO.fix_move_distance,TRIALINFO.moveDuration,towards);
-    elseif(TRIALINFO.motionType == 3)%% fixation point is stable and the starts are rotating
-% % %         [Lateral,Heave,Surge,fX,fY,fZ] = cameraRotation(trialCondition);
-        [Lateral,Surge,Heave]= CalculateConstentVelocityMovement(0,trialCondition(1),TRIALINFO.star_move_distance,TRIALINFO.moveDuration,SCREEN.refreshRate);
-       [rotationAngle,rotVector]= CalculateRotationMovement(90,0,trialCondition(3),trialCondition(5));
-    else %% fixation point is moving directly and the starts are rotating
-        [Lateral,Surge,Heave,fX,fY,fZ] = cameraRotation(trialCondition);
-        if(trialCondition(1)<90)
-            towards = 1;
-        else
-            towards = -1;
-        end
-        [fixX,fixY,fixZ] = calculateLinearMovementForFix(TRIALINFO.fix_move_distance,TRIALINFO.moveDuration,towards);
-    end
-   
-    Screen('FillOval', win, [255 0 0 255], fixation_position);
+    
+    drawFixation(TRIALINFO.fixationPosition{fixationType});
+
+    % wait for trial interval
+    WaitSecs(TRIALINFO.intertrialInterval-toc(trialInterval));
+    
+    
     Screen('Flip', win);
-    WaitSecs(0.5);
+    
+    %eyelink
     Screen('BlendFunction', win, GL_ONE, GL_ZERO);
     fixation_position_frame = fixation_position;
     for frames=1:length(Heave)
         Heavei = Heave(frames);
         Surgei = Surge(frames);
         Laterali = Lateral(frames);
-       
+        
         if(TRIALINFO.motionType >2)
             
             rotationAnglei =rotationAngle(frames);
@@ -212,15 +205,7 @@ for i =1:TRIALINFO.trial_num
         DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
         Screen('Flip', win, 0, 0);
     end
-    %% White during the inter-trial intervals  
-    Screen('FillRect', win ,[255 255 255],[0 0 TRIALINFO.screenWidthPIX TRIALINFO.screenHeightPIX]);
 
-    Screen('Flip', win,0,0);
-    WaitSecs(1);
-    [ keyIsDown, seconds, keyCode ] = KbCheck;
-    if keyCode(escape)
-        break;
-    end
 end
 
 Screen('Flip', win);
