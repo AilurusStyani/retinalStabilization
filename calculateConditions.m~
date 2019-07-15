@@ -38,7 +38,7 @@ trialIndex1 = [ones(size(moveCondition1,1),1)*1, (1:size(moveCondition1,1))'];
 % moving type 2
 % [moveDuration, headingDegree, headingSpeed, fixMoveDirection, fixSpeed, condition marker]
 moveCondition2 = [];
-if sum(ismember(TRIALINFO.motionType,2))
+if TRIALINFO.motionType(2)
     mov2FdFs = [sort(repmat(TRIALINFO.fixMoveDirection',length(TRIALINFO.fixSpeed),1)),...
         repmat(TRIALINFO.fixSpeed',length(TRIALINFO.fixMoveDirection),1)];
     
@@ -58,7 +58,7 @@ trialIndex2 = [ones(size(moveCondition2,1),1)*2, (1:size(moveCondition2,1))'];
 % moving type 3
 % [moveDuration, headingDegree, headingSpeed, rotationDegree, rotationSpeed, condition marker]
 moveCondition3 = [];
-if sum(ismember(TRIALINFO.motionType,3))
+if TRIALINFO.motionType(3)
    mov3RdRs  = [sort(repmat(TRIALINFO.rotationDegree',length(TRIALINFO.rotationSpeed),1)),...
        repmat(TRIALINFO.rotationSpeed',length(TRIALINFO.rotationDegree),1)];
    
@@ -78,7 +78,7 @@ trialIndex3 = [ones(size(moveCondition3,1),1)*3, (1:size(moveCondition3,1))'];
 % moving type 4
 % [moveDuration, headingDegree, headingSpeed, fixMoveDirection, fixSpeed, condition marker]
 moveCondition4 = [];
-if sum(ismember(TRIALINFO.motionType,4))
+if TRIALINFO.motionType(4)
    mov4FdFs = [sort(repmat(TRIALINFO.fixMoveDirection',length(TRIALINFO.fixSpeed),1)),...
        repmat(TRIALINFO.fixSpeed',length(TRIALINFO.fixMoveDirection),1)];
    

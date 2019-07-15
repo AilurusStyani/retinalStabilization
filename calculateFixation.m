@@ -1,8 +1,9 @@
 function [fX,fY] = calculateFixation()
+% fX{1} and fY{1} position of every frame for condition 1
+% fX{2} and fY{2} position of every frame for condition 2
+% fX{3} and fY{3} position of every frame for condition 3
 global TRIALINFO
 global SCREEN
-
-SCREEN.widthPix
 
 frameNum = ceil(SCREEN.refreshRate*TRIALINFO.moveDuration);
 frameOrder = 1:frameNum;
