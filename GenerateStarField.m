@@ -8,7 +8,7 @@ baseZ=rand(1,totalDots)*STARFIELD.dimensionZ-STARFIELD.dimensionZ/4.0;
 STARDATA.x=zeros(1,3*totalDots);
 STARDATA.y=zeros(1,3*totalDots);
 STARDATA.z=zeros(1,3*totalDots);
-size = degree2pix(STARFIELD.starSize);
+size = degree2length(STARFIELD.starSize);
 
 %Vertex1
 Vertex1X=baseX - size/2.0;
@@ -39,5 +39,6 @@ for i=1:totalDots
     STARDATA.y(j)=Vertex3Y(i);
     STARDATA.z(j)=Vertex3Z(i);
     j=j+1;
+end
 end
 

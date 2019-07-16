@@ -7,7 +7,7 @@ frameNum = ceil(SCREEN.refreshRate * TRIALINFO.preMoveDuration);
 frameOrder = 1:frameNum+1;
 glX = zeros(frameNum+1,1);
 glY = zeros(frameNum+1,1);
-glZ = (-TRIALINFO.headingSpeed .* TRIALINFO.preMoveDuration ./ frameNum) * frameOrder;
+glZ = (-TRIALINFO.headingSpeed .* TRIALINFO.preMoveDuration ./ frameNum) * frameOrder';
 
 % ectract position
 pX = glX(1:end-1);

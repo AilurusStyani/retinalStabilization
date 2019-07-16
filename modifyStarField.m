@@ -2,12 +2,12 @@ function modifyStarField()
 
 global STARFIELD;
 global STARDATA;
-dimensionX = STARFIELD.demensionX;
-dimensionY = STARFIELD.demensionY;
-dimensionZ = STARFIELD.demensionZ ;
-size = STARFIELD.StarSize ;
-density = STARFIELD.Density ;
-probability = STARFIELD.Probability ;
+dimensionX = STARFIELD.dimensionX;
+dimensionY = STARFIELD.dimensionY;
+dimensionZ = STARFIELD.dimensionZ ;
+size = STARFIELD.starSize ;
+density = STARFIELD.density ;
+probability = STARFIELD.probability ;
 totalDots = dimensionX*dimensionY*dimensionZ*density;
 totalModifyDots = floor(totalDots*(1.0-probability));
 j = 1;
