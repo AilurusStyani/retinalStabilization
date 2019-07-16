@@ -230,7 +230,7 @@ for i =1:trialNum
                 calibrateCkeck = tic;
             end
         end
-        if keyCode(cKey) % press c to calibrate
+        if keyCode(cKey) % press c to force calibrate
             EyelinkDoTrackerSetup(el);
             Eyelink('StartRecording');
             Eyelink('message', 'Force Calibrate Finished');
