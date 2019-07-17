@@ -1,11 +1,11 @@
-function [escFlag,retryFlag] = fixationCheck(fixationPoint,eyeTrackerWinP,fixationPeriod,eye_used,escape,skipKey,cKey,el)
+function [escFlag,retryFlag] = fixationCheck(fixationPoint,eyeTrackerWinP,fixationPeriod,escape,skipKey,cKey,el)
 % fixationPoint: screen position of fixation point
-% eyeTrackerWinP: fixation window of pixel
-% fixationPeriod: the time window of fixation
-% eye_used: in case not using left eye, this function is coded for left eye currently
-% escape: break the block
-% skipKey: skip the fixation
-% cKey: force calibration
+% eyeTrackerWinP: fixation window in pixel
+% fixationPeriod: the time window of period
+% eye_used: should be in monocular, this function is coded for left eye currently
+% escape: the key to break the block
+% skipKey: the key to skip the fixation
+% cKey: the key to force calibration
 % el: eyelink stract
 escFlag = 0;
 retryFlag = 0;
@@ -23,10 +23,6 @@ while 1
         if keyCode(cKey) % press C to calibrate
             EyelinkDoTrackerSetup(el);
             Eyelink('StartRecording');
-            eye_used = Eyelink('EyeAvailable'); % get eye that's tracked
-            if eye_used == el.BINOCULAR % if both eyes are tracked
-                eye_used = el.LEFTEYE; % use left eye
-            end
             Eyelink('message', 'SYNCTIME');	 	 % zero-plot time for EDFVIEW
             error=Eyelink('checkrecording'); 		% Check recording status */
             if(error~=0)
@@ -35,7 +31,7 @@ while 1
                 Eyelink('ShutDown');
                 Screen('CloseAll');
             end
-            WaitSecs(0.5); % wait a bit
+            WaitSecs(1); % wait a bit
             retryFlag = 1;
             return
         end
@@ -43,9 +39,10 @@ while 1
 %         if Eyelink( 'NewFloatSampleAvailable')>0
             % get the sample in the form of an event structure
             evt = Eyelink( 'NewestFloatSample');
-            if eye_used ~= -1 % do we know which eye to use yet?
-                px =evt.gx(eye_used+1); % +1 as we're accessing MATLAB array
-                py = evt.gy(eye_used+1);
+            eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
+            if eyeUsed ~= -1 % do we know which eye to use yet?
+                px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                py = evt.gy(eyeUsed+1);
                 % frameStartTime(i) = evt.time;
             end
 %         end

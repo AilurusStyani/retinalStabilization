@@ -8,21 +8,21 @@ baseZ=rand(1,totalDots)*STARFIELD.dimensionZ-STARFIELD.dimensionZ/4.0;
 STARDATA.x=zeros(1,3*totalDots);
 STARDATA.y=zeros(1,3*totalDots);
 STARDATA.z=zeros(1,3*totalDots);
-size = degree2length(STARFIELD.starSize);
+starSize = degree2length(STARFIELD.starSize);
 
 %Vertex1
-Vertex1X=baseX - size/2.0;
-Vertex1Y=baseY - size/2.0;
+Vertex1X=baseX - starSize/2.0;
+Vertex1Y=baseY - starSize/2.0;
 Vertex1Z=baseZ;
 
 %Vertex2
 Vertex2X=baseX;
-Vertex2Y=baseY + size/2.0;
+Vertex2Y=baseY + starSize/2.0;
 Vertex2Z=baseZ;
 
 %Vertex3
-Vertex3X=baseX + size/2.0;
-Vertex3Y=baseY - size/2.0;
+Vertex3X=baseX + starSize/2.0;
+Vertex3Y=baseY - starSize/2.0;
 Vertex3Z=baseZ;
 j=1;
 
