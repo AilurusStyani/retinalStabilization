@@ -73,7 +73,7 @@ TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 STARFIELD.dimensionX = 400*coordinateMuilty;  % cm
 STARFIELD.dimensionY = 400*coordinateMuilty;  % cm
 STARFIELD.dimensionZ = 900*coordinateMuilty;  % cm
-STARFIELD.starSize = 0.1;    % degree
+STARFIELD.starSize = 0.5;    % degree
 STARFIELD.density = 1000/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
 STARFIELD.probability = TRIALINFO.coherence;
 
@@ -273,12 +273,8 @@ while trialI <= trialNum
     if ~testMode
         % fixation check
         [escFlag,retryFlag] = fixationCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.fixationWindow),TRIALINFO.fixationPeriod,escape,skipKey,cKey,el);
-        if Eyelink( 'NewFloatSampleAvailable')>0
-            % get the sample in the form of an event structure
-            evt = Eyelink( 'NewestFloatSample');
-        end
-        Eyelink('message', ['Moving Start ' num2str(indexI)]);
-        trialStTime(trialI) = evt.time;
+        Eyelink('message', ['Moving Start ' num2str(trialI)]);
+        trialStTime(trialI) = toc(blockSt);
     else
         trialStTime(trialI) = toc(blockSt);
         escFlag=0;
@@ -362,7 +358,7 @@ while trialI <= trialNum
                     gluLookAt(glX(f),glY(f),glZ(f),fX(f),fY(f),fZ(f),0.0,1.0,0.0);
                 elseif motionTypeI == 4
                     if ~testMode
-                        if toc(eyePT) < 0.01 && ~isnan(eyePIndex(end)) % 10ms
+                        if toc(eyePT) < 0.1 && isnan(eyePIndex(end,1)) % 10ms
                             evt = Eyelink( 'NewestFloatSample');
                             eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
                             if eyeUsed ~= -1 % do we know which eye to use yet?
@@ -380,7 +376,7 @@ while trialI <= trialNum
                             eyeN2C = eyePNew - SCREEN.center;
                             
                             % calculate for rotation on
-                            eyeRD = -(pix2degree(eyeO2C) - pix2degree(eyeN2C));
+                            eyeRD = -(pix2degree(eyeN2C) - pix2degree(eyeO2C));
                             faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
                             eyePO = eyePNew;
                             eyePT = tic;
@@ -417,6 +413,7 @@ while trialI <= trialNum
     end
     
 end
+
 Screen('Flip', win);
 
 if ~testMode
@@ -447,11 +444,5 @@ end
 % save(fullfile(saveDir,fileName),'upTarget','lowerTarget','fixationPoint','trialStTime','fixationFinTime','choiceStTime','trialEndTime','trialCondition','choiceFinTime','fixDuration','SCREEN','trialDir','distractor');
 Screen('CloseAll');
 cd(curdir);
-
-
-
-
-
-
 
 

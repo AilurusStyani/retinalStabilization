@@ -24,7 +24,7 @@ rightArror = KbName('RightArrow');
 upArror = KbName('UpArrow');
 cKey = KbName('c');
 
-testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
@@ -39,7 +39,7 @@ else
 end
 
 TRIALINFO.repetition = 1;
-TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
+TRIALINFO.motionType = [4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
 TRIALINFO.headingDegree = 0 ; % degree, currently unused
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
@@ -54,8 +54,8 @@ TRIALINFO.pausePeriod = 0.18; % second
 TRIALINFO.preMoveDuration = 0.4; % second
 TRIALINFO.moveDuration = 1; % second
 
-TRIALINFO.fixationWindow = 1.75; % degree
-TRIALINFO.pursuitWindow = 2; % degree
+TRIALINFO.fixationWindow = 10; % degree
+TRIALINFO.pursuitWindow = 15; % degree
 
 TRIALINFO.intertrialInterval = 1; % second
 
@@ -72,7 +72,7 @@ TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 % parameters for the star field
 STARFIELD.dimensionX = 400*coordinateMuilty;  % cm
 STARFIELD.dimensionY = 400*coordinateMuilty;  % cm
-STARFIELD.dimensionZ = 900*coordinateMuilty;  % cm
+STARFIELD.dimensionZ = 700*coordinateMuilty;  % cm
 STARFIELD.starSize = 0.1;    % degree
 STARFIELD.density = 1000/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
 STARFIELD.probability = TRIALINFO.coherence;
@@ -272,12 +272,8 @@ while trialI <= trialNum
     if ~testMode
         % fixation check
         [escFlag,retryFlag] = fixationCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.fixationWindow),TRIALINFO.fixationPeriod,escape,skipKey,cKey,el);
-        if Eyelink( 'NewFloatSampleAvailable')>0
-            % get the sample in the form of an event structure
-            evt = Eyelink( 'NewestFloatSample');
-        end
-        Eyelink('message', ['Moving Start ' num2str(indexI)]);
-        trialStTime(trialI) = evt.time;
+        Eyelink('message', ['Moving Start ' num2str(trialI)]);
+        trialStTime(trialI) = toc(blockSt);
     else
         trialStTime(trialI) = toc(blockSt);
         escFlag=0;
@@ -361,7 +357,7 @@ while trialI <= trialNum
                     gluLookAt(glX(f),glY(f),glZ(f),fX(f),fY(f),fZ(f),0.0,1.0,0.0);
                 elseif motionTypeI == 4
                     if ~testMode
-                        if toc(eyePT) < 0.01 && ~isnan(eyePIndex(end)) % 10ms
+                        if toc(eyePT) < 0.1 && isnan(eyePIndex(end,1)) % 10ms
                             evt = Eyelink( 'NewestFloatSample');
                             eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
                             if eyeUsed ~= -1 % do we know which eye to use yet?
@@ -379,7 +375,7 @@ while trialI <= trialNum
                             eyeN2C = eyePNew - SCREEN.center;
                             
                             % calculate for rotation on
-                            eyeRD = -(pix2degree(eyeO2C) - pix2degree(eyeN2C));
+                            eyeRD = -(pix2degree(eyeN2C) - pix2degree(eyeO2C));
                             faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
                             eyePO = eyePNew;
                             eyePT = tic;

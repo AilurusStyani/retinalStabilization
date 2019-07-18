@@ -4,7 +4,8 @@ function GenerateStarField()
 totalDots = round(STARFIELD.dimensionX*STARFIELD.dimensionY*STARFIELD.dimensionZ*STARFIELD.density);
 baseX=rand(1,totalDots)*STARFIELD.dimensionX-STARFIELD.dimensionX/2.0;
 baseY=rand(1,totalDots)*STARFIELD.dimensionY-STARFIELD.dimensionY/2.0;
-baseZ=rand(1,totalDots)*STARFIELD.dimensionZ-STARFIELD.dimensionZ/4.0;
+% baseZ=rand(1,totalDots)*STARFIELD.dimensionZ-STARFIELD.dimensionZ/4.0;
+baseZ=rand(1,totalDots)*STARFIELD.dimensionZ-STARFIELD.dimensionZ;
 STARDATA.x=zeros(1,3*totalDots);
 STARDATA.y=zeros(1,3*totalDots);
 STARDATA.z=zeros(1,3*totalDots);
