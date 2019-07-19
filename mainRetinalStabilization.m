@@ -41,7 +41,7 @@ end
 TRIALINFO.repetition = 1;
 TRIALINFO.motionType = [4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
 TRIALINFO.headingDegree = 0 ; % degree, currently unused
-TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
+TRIALINFO.headingSpeed = 1*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
 TRIALINFO.fixationSizeD = 0.25;  % degree
 
@@ -52,10 +52,10 @@ TRIALINFO.fixationSizeD = 0.25;  % degree
 TRIALINFO.fixationPeriod = 0.5; % second
 TRIALINFO.pausePeriod = 0.18; % second
 TRIALINFO.preMoveDuration = 0.4; % second
-TRIALINFO.moveDuration = 1; % second
+TRIALINFO.moveDuration = 10; % second
 
 TRIALINFO.fixationWindow = 10; % degree
-TRIALINFO.pursuitWindow = 15; % degree
+TRIALINFO.pursuitWindow = 30; % degree
 
 TRIALINFO.intertrialInterval = 1; % second
 
@@ -213,6 +213,7 @@ end
 trialStTime = zeros(trialNum,1);
 blockSt = tic;
 trialI = 1;
+retryFlag = 0;
 
 while trialI <= trialNum
     
@@ -324,7 +325,7 @@ while trialI <= trialNum
             if ~testMode
                 eyePIndex = nan(10,2);
                 eyePT = tic;
-                eyePI = 1;
+                eyePi = 1;
                 
                 % extract current eye position
                 evt = Eyelink( 'NewestFloatSample');
@@ -335,8 +336,10 @@ while trialI <= trialNum
                     % frameStartTime(i) = evt.time;
                 end
                 eyePO = [px,py];
+            else
+                eyePO = [fixX{fixationType}(1),fixY{fixationType}(1)];
             end
-            
+            eyePNew = [fixX{fixationType}(1),fixY{fixationType}(1)];
             % define origin face direction for motion type 4
             if motionTypeI ==4
                 faceDirection = [0;0;-1];
@@ -357,29 +360,42 @@ while trialI <= trialNum
                     gluLookAt(glX(f),glY(f),glZ(f),fX(f),fY(f),fZ(f),0.0,1.0,0.0);
                 elseif motionTypeI == 4
                     if ~testMode
-                        if toc(eyePT) < 0.1 && isnan(eyePIndex(end,1)) % 10ms
-                            evt = Eyelink( 'NewestFloatSample');
-                            eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
-                            if eyeUsed ~= -1 % do we know which eye to use yet?
-                                px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
-                                py = evt.gy(eyeUsed+1);
-                                % frameStartTime(i) = evt.time;
+                        for k = 1:10
+                            if toc(eyePT) < 0.01 && isnan(eyePIndex(end,1)) % 10ms
+                                evt = Eyelink( 'NewestFloatSample');
+                                eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
+                                if eyeUsed ~= -1 % do we know which eye to use yet?
+                                    px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                                    py = evt.gy(eyeUsed+1);
+                                    % frameStartTime(i) = evt.time;
+                                end
+                                eyePIndex(eyePi,:) = [px,py];
+                                eyePi = eyePi+1;
+                            else
+                                % calculate mean position
+                                eyePNew = nanmean(eyePIndex,1);
+                                
+                                eyeO2C = eyePO - SCREEN.center;
+                                eyeN2C = eyePNew - SCREEN.center;
+                                
+                                % calculate for rotation on
+                                eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
+                                faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
+                                eyePO = eyePNew;
+                                eyePT = tic;
+                                eyePi = 1;
+                                eyePIndex = nan(10,2);
                             end
-                            eyePIndex(eyePI,:) = [px,py];
-                            eyePI = eyePI+1;
-                        else
-                            % calculate mean position
-                            eyePNew = nanmean(eyePIndex,1);
-                            
-                            eyeO2C = eyePO - SCREEN.center;
-                            eyeN2C = eyePNew - SCREEN.center;
-                            
-                            % calculate for rotation on
-                            eyeRD = -(pix2degree(eyeN2C) - pix2degree(eyeO2C));
-                            faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
-                            eyePO = eyePNew;
-                            eyePT = tic;
                         end
+                    else
+                        eyePNew = [fixX{fixationType}(f),fixY{fixationType}(f)];
+                        eyeO2C = eyePO - SCREEN.center;
+                        eyeN2C = eyePNew - SCREEN.center;
+                        
+                        % calculate for rotation on
+                        eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
+                        faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
+                        eyePO = eyePNew;
                     end
                     gluLookAt(glX(f),glY(f),glZ(f),glX(f)+faceDirection(1),glY(f)+faceDirection(2),glZ(f)+faceDirection(3),0.0,1.0,0.0);
                 end
@@ -391,7 +407,7 @@ while trialI <= trialNum
                 % draw the fixation point
                 DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
                 drawFixation([fixX{fixationType}(f),fixY{fixationType}(f)],TRIALINFO.fixationSizeP,win);
-                
+                drawFixation(eyePNew,TRIALINFO.fixationSizeP,win);
                 % check for eye pursuit
                 if ~testMode
                     retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
@@ -443,12 +459,3 @@ end
 % save(fullfile(saveDir,fileName),'upTarget','lowerTarget','fixationPoint','trialStTime','fixationFinTime','choiceStTime','trialEndTime','trialCondition','choiceFinTime','fixDuration','SCREEN','trialDir','distractor');
 Screen('CloseAll');
 cd(curdir);
-
-
-
-
-
-
-
-
-
