@@ -22,9 +22,12 @@ escape = KbName('f1');
 leftArror = KbName('LeftArrow');
 rightArror = KbName('RightArrow');
 upArror = KbName('UpArrow');
-cKey = KbName('c');
+cKey = KbName('c'); % force calibration
 
-testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+pageUp = KbName('pageup'); % increase binocular deviation
+pageDown = KbName('pagedown'); % decrease binocular deviation
+
+testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
@@ -38,10 +41,11 @@ else
     SCREEN.heightCM = 65*coordinateMuilty; % cm
 end
 
-TRIALINFO.repetition = 1;
-TRIALINFO.motionType = [4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
-TRIALINFO.headingDegree = 0 ; % degree, currently unused
-TRIALINFO.headingSpeed = 1*coordinateMuilty; % cm/s
+TRIALINFO.repetition = 15;
+TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
+% TRIALINFO.headingDegree = [-10 0 10] ; % degre
+TRIALINFO.headingDegree = [-10 -5 -1 0 1 5 10]; % degree
+TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
 TRIALINFO.fixationSizeD = 0.25;  % degree
 
@@ -52,7 +56,7 @@ TRIALINFO.fixationSizeD = 0.25;  % degree
 TRIALINFO.fixationPeriod = 0.5; % second
 TRIALINFO.pausePeriod = 0.18; % second
 TRIALINFO.preMoveDuration = 0.4; % second
-TRIALINFO.moveDuration = 10; % second
+TRIALINFO.moveDuration = 1; % second
 
 TRIALINFO.fixationWindow = 10; % degree
 TRIALINFO.pursuitWindow = 30; % degree
@@ -143,7 +147,8 @@ GenerateStarField();
 [fixX,fixY] = calculateFixation();
 
 % initial Eyelink
-timePredicted = (TRIALINFO.fixationPeriod + TRIALINFO.pausePeriod + TRIALINFO.preMoveDuration+TRIALINFO.moveDuration + TRIALINFO.intertrialInterval) * TRIALINFO.repetition * length(TRIALINFO.motionType) * length(TRIALINFO.rotationDegree);
+timePredicted = (TRIALINFO.fixationPeriod + TRIALINFO.pausePeriod + TRIALINFO.preMoveDuration+TRIALINFO.moveDuration + ...
+    TRIALINFO.intertrialInterval) * TRIALINFO.repetition * length(TRIALINFO.motionType) * length(TRIALINFO.rotationDegree) * length(TRIALINFO.headingDegree);
 calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
 
@@ -272,25 +277,78 @@ while trialI <= trialNum
     
     if ~testMode
         % fixation check
-        [escFlag,retryFlag] = fixationCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.fixationWindow),TRIALINFO.fixationPeriod,escape,skipKey,cKey,el);
+        escFlag = fixationCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.fixationWindow),TRIALINFO.fixationPeriod,escape,skipKey,cKey,el);
         Eyelink('message', ['Moving Start ' num2str(trialI)]);
         trialStTime(trialI) = toc(blockSt);
     else
         trialStTime(trialI) = toc(blockSt);
-        escFlag=0;
-        retryFlag=0;
+        escFlag = 0;
     end
     
     if escFlag
         break;
     end
     
-    if ~retryFlag
-        Screen('BlendFunction', win, GL_ONE, GL_ZERO);
+    Screen('BlendFunction', win, GL_ONE, GL_ZERO);
+    
+    % for pre-movement
+    for f=1:length(pglX)
         
-        % for pre-movement
-        for f=1:length(pglX)
+        if(mod(f,1)==0)
+            modifyStarField();
+        end
+        Screen('BeginOpenGL', win);
+        glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
+        glMatrixMode(GL.PROJECTION);
+        glLoadIdentity;
+        glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+        glMatrixMode(GL.MODELVIEW);
+        glLoadIdentity;
+        gluLookAt(pglX(f),pglY(f),pglZ(f),pfX(f),pfY(f),pfZ(f),0.0,1.0,0.0);
+        glClearColor(0,0,0,0);
+        glColor3f(1,1,0);
+        Screen('EndOpenGL', win);
+        
+        % draw the fixation point and 3d dots
+        DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
+        drawFixation(TRIALINFO.fixationPosition{fixationType},TRIALINFO.fixationSizeP,win);
+        
+        % check for eye pursuit
+        if ~testMode
+            retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
+        end
+        if retryFlag
+            break
+        end
+        Screen('Flip', win, 0, 0);
+    end
+        
+    if ~retryFlag
+        % for trial movement
+        if ~testMode
+            eyePIndex = nan(10,2);
+            eyePT = tic;
+            eyePi = 1;
             
+            % extract current eye position
+            evt = Eyelink( 'NewestFloatSample');
+            eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
+            if eyeUsed ~= -1 % do we know which eye to use yet?
+                px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                py = evt.gy(eyeUsed+1);
+                % frameStartTime(i) = evt.time;
+            end
+            eyePO = [px,py];
+        else
+            eyePO = [fixX{fixationType}(1),fixY{fixationType}(1)];
+        end
+        eyePNew = [fixX{fixationType}(1),fixY{fixationType}(1)];
+        % define origin face direction for motion type 4
+        if motionTypeI ==4
+            faceDirection = [0;0;-1];
+        end
+        
+        for f=1:length(glX)
             if(mod(f,1)==0)
                 modifyStarField();
             end
@@ -301,125 +359,74 @@ while trialI <= trialNum
             glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
             glMatrixMode(GL.MODELVIEW);
             glLoadIdentity;
-            gluLookAt(pglX(f),pglY(f),pglZ(f),pfX(f),pfY(f),pfZ(f),0.0,1.0,0.0);
+            if motionTypeI ~= 4
+                gluLookAt(glX(f),glY(f),glZ(f),fX(f),fY(f),fZ(f),0.0,1.0,0.0);
+            elseif motionTypeI == 4
+                if ~testMode
+                    for k = 1:10
+                        if toc(eyePT) < 0.01 && isnan(eyePIndex(end,1)) % 10ms
+                            evt = Eyelink( 'NewestFloatSample');
+                            eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
+                            if eyeUsed ~= -1 % do we know which eye to use yet?
+                                px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                                py = evt.gy(eyeUsed+1);
+                                % frameStartTime(i) = evt.time;
+                            end
+                            eyePIndex(eyePi,:) = [px,py];
+                            eyePi = eyePi+1;
+                        else
+                            % calculate mean position
+                            eyePNew = nanmean(eyePIndex,1);
+                            
+                            eyeO2C = eyePO - SCREEN.center;
+                            eyeN2C = eyePNew - SCREEN.center;
+                            
+                            % calculate for rotation on
+                            eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
+                            faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
+                            eyePO = eyePNew;
+                            eyePT = tic;
+                            eyePi = 1;
+                            eyePIndex = nan(10,2);
+                            break
+                        end
+                    end
+                else
+                    eyePNew = [fixX{fixationType}(f),fixY{fixationType}(f)];
+                    eyeO2C = eyePO - SCREEN.center;
+                    eyeN2C = eyePNew - SCREEN.center;
+                    
+                    % calculate for rotation on
+                    eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
+                    faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
+                    eyePO = eyePNew;
+                end
+                gluLookAt(glX(f),glY(f),glZ(f),glX(f)+faceDirection(1),glY(f)+faceDirection(2),glZ(f)+faceDirection(3),0.0,1.0,0.0);
+            end
+            
             glClearColor(0,0,0,0);
             glColor3f(1,1,0);
             Screen('EndOpenGL', win);
             
-            % draw the fixation point and 3d dots
+            % draw the fixation point
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
-            drawFixation(TRIALINFO.fixationPosition{fixationType},TRIALINFO.fixationSizeP,win);
+            drawFixation([fixX{fixationType}(f),fixY{fixationType}(f)],TRIALINFO.fixationSizeP,win);
             
             % check for eye pursuit
             if ~testMode
                 retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
+            else
+                % simulate eye movement
+                drawFixation(eyePNew,TRIALINFO.fixationSizeP,win);
             end
+            
             if retryFlag
                 break
             end
             Screen('Flip', win, 0, 0);
         end
-        
-        if ~retryFlag
-            % for trial movement
-            if ~testMode
-                eyePIndex = nan(10,2);
-                eyePT = tic;
-                eyePi = 1;
-                
-                % extract current eye position
-                evt = Eyelink( 'NewestFloatSample');
-                eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
-                if eyeUsed ~= -1 % do we know which eye to use yet?
-                    px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
-                    py = evt.gy(eyeUsed+1);
-                    % frameStartTime(i) = evt.time;
-                end
-                eyePO = [px,py];
-            else
-                eyePO = [fixX{fixationType}(1),fixY{fixationType}(1)];
-            end
-            eyePNew = [fixX{fixationType}(1),fixY{fixationType}(1)];
-            % define origin face direction for motion type 4
-            if motionTypeI ==4
-                faceDirection = [0;0;-1];
-            end
-            
-            for f=1:length(glX)
-                if(mod(f,1)==0)
-                    modifyStarField();
-                end
-                Screen('BeginOpenGL', win);
-                glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
-                glMatrixMode(GL.PROJECTION);
-                glLoadIdentity;
-                glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
-                glMatrixMode(GL.MODELVIEW);
-                glLoadIdentity;
-                if motionTypeI ~= 4
-                    gluLookAt(glX(f),glY(f),glZ(f),fX(f),fY(f),fZ(f),0.0,1.0,0.0);
-                elseif motionTypeI == 4
-                    if ~testMode
-                        for k = 1:10
-                            if toc(eyePT) < 0.01 && isnan(eyePIndex(end,1)) % 10ms
-                                evt = Eyelink( 'NewestFloatSample');
-                                eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
-                                if eyeUsed ~= -1 % do we know which eye to use yet?
-                                    px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
-                                    py = evt.gy(eyeUsed+1);
-                                    % frameStartTime(i) = evt.time;
-                                end
-                                eyePIndex(eyePi,:) = [px,py];
-                                eyePi = eyePi+1;
-                            else
-                                % calculate mean position
-                                eyePNew = nanmean(eyePIndex,1);
-                                
-                                eyeO2C = eyePO - SCREEN.center;
-                                eyeN2C = eyePNew - SCREEN.center;
-                                
-                                % calculate for rotation on
-                                eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
-                                faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
-                                eyePO = eyePNew;
-                                eyePT = tic;
-                                eyePi = 1;
-                                eyePIndex = nan(10,2);
-                            end
-                        end
-                    else
-                        eyePNew = [fixX{fixationType}(f),fixY{fixationType}(f)];
-                        eyeO2C = eyePO - SCREEN.center;
-                        eyeN2C = eyePNew - SCREEN.center;
-                        
-                        % calculate for rotation on
-                        eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
-                        faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
-                        eyePO = eyePNew;
-                    end
-                    gluLookAt(glX(f),glY(f),glZ(f),glX(f)+faceDirection(1),glY(f)+faceDirection(2),glZ(f)+faceDirection(3),0.0,1.0,0.0);
-                end
-                
-                glClearColor(0,0,0,0);
-                glColor3f(1,1,0);
-                Screen('EndOpenGL', win);
-                
-                % draw the fixation point
-                DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
-                drawFixation([fixX{fixationType}(f),fixY{fixationType}(f)],TRIALINFO.fixationSizeP,win);
-                drawFixation(eyePNew,TRIALINFO.fixationSizeP,win);
-                % check for eye pursuit
-                if ~testMode
-                    retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
-                end
-                if retryFlag
-                    break
-                end
-                Screen('Flip', win, 0, 0);
-            end
-        end
     end
-    
+
     if retryFlag
         trialOrder = [trialOrder, trialOrder(trialI)];
         trialOrder(trialI) = [];

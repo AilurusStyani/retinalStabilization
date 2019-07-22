@@ -3,35 +3,29 @@ global TRIALINFO
 global SCREEN
 
 frameNum = ceil(SCREEN.refreshRate * TRIALINFO.moveDuration);
+headingDegree = TRIALINFO.trialConditions{index(1)}(index(2),2);
+frameOrder = 1:frameNum;
 
-frameOrder = 1:frameNum+1;
-glX = zeros(frameNum+1,1);
-glY = zeros(frameNum+1,1);
-glZ = (-TRIALINFO.headingSpeed .* TRIALINFO.moveDuration ./ frameNum) * frameOrder';
+% calculate position
+pX = (TRIALINFO.headingSpeed .* TRIALINFO.moveDuration ./ frameNum .* sind(headingDegree)) * frameOrder' + pglX;
+pY = zeros(frameNum,1) + pglY;
+pZ =-(TRIALINFO.headingSpeed .* TRIALINFO.moveDuration ./ frameNum .* cosd(headingDegree)) * frameOrder' + pglZ;
 
-% ectract position
-pX = glX(1:end-1)+pglX;
-pY = glY(1:end-1)+pglY;
-pZ = glZ(1:end-1)+pglZ;
 
-% extract facing direction
-fX = glX(2:end);
-fY = glY(2:end);
-fZ = glZ(2:end);
+% calculate facing direction
+fX = pX;
+fY = pY;
+fZ = pZ-1;
 
 if motionType == 3
     alpha = TRIALINFO.trialConditions{index(1)}(index(2),4) / frameNum;
     metrix = roty(-alpha);
-    fMetrix = [fX';fY';fZ'];
+    fMetrix = [(fX-pX)';(fY-pY)';(fZ-pZ)'];
     for i = 2:frameNum
         fMetrix(:,i) = metrix * fMetrix(:,i-1);
     end
     fX = fMetrix(1,:)'+pX;
     fY = fMetrix(2,:)'+pY;
     fZ = fMetrix(3,:)'+pZ;
-else
-    fX = fX+pglX;
-    fY = fY+pglY;
-    fZ = fZ+pglZ;
 end
 end

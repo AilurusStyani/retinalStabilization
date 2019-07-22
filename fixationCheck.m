@@ -1,4 +1,4 @@
-function [escFlag,retryFlag] = fixationCheck(fixationPoint,eyeTrackerWinP,fixationPeriod,escape,skipKey,cKey,el)
+function escFlag = fixationCheck(fixationPoint,eyeTrackerWinP,fixationPeriod,escape,skipKey,cKey,el)
 % fixationPoint: screen position of fixation point
 % eyeTrackerWinP: fixation window in pixel
 % fixationPeriod: the time window of period
@@ -8,7 +8,6 @@ function [escFlag,retryFlag] = fixationCheck(fixationPoint,eyeTrackerWinP,fixati
 % cKey: the key to force calibration
 % el: eyelink stract
 escFlag = 0;
-retryFlag = 0;
 while 1
     fixationStart = tic;
     while 1
@@ -32,8 +31,7 @@ while 1
                 Screen('CloseAll');
             end
             WaitSecs(1); % wait a bit
-            retryFlag = 1;
-            return
+            break
         end
         
 %         if Eyelink( 'NewFloatSampleAvailable')>0
