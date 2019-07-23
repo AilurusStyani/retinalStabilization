@@ -6,7 +6,8 @@ global TRIALINFO;
 global CAMERA;
 global STARFIELD;
 global STARDATA;
-global SCREEN
+global SCREEN;
+global FRUSTUM;
 
 %% path name and file name
 subjectName = '';
@@ -19,8 +20,8 @@ curdir = pwd;
 KbName('UnifyKeyNames'); 
 skipKey = KbName('space');
 escape = KbName('f1');
-leftArror = KbName('LeftArrow');
-rightArror = KbName('RightArrow');
+leftKey = KbName('LeftArrow');
+rightKey = KbName('RightArrow');
 upArror = KbName('UpArrow');
 cKey = KbName('c'); % force calibration
 
@@ -28,6 +29,9 @@ pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
 testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+
+TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
+deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
 
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
@@ -58,8 +62,8 @@ TRIALINFO.pausePeriod = 0.18; % second
 TRIALINFO.preMoveDuration = 0.4; % second
 TRIALINFO.moveDuration = 1; % second
 
-TRIALINFO.fixationWindow = 10; % degree
-TRIALINFO.pursuitWindow = 30; % degree
+TRIALINFO.fixationWindow = 2; % degree
+TRIALINFO.pursuitWindow = 3; % degree
 
 TRIALINFO.intertrialInterval = 1; % second
 
@@ -79,6 +83,7 @@ STARFIELD.dimensionY = 400*coordinateMuilty;  % cm
 STARFIELD.dimensionZ = 700*coordinateMuilty;  % cm
 STARFIELD.starSize = 0.1;    % degree
 STARFIELD.density = 1000/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
+
 STARFIELD.probability = TRIALINFO.coherence;
 
 % parameters for the camera
@@ -86,6 +91,9 @@ CAMERA.elevation = 0*coordinateMuilty; % unit cm, average height of a human
 CAMERA.distance = SCREEN.distance; % unit cm, distance from participant to the screen
 CAMERA.sightDegreeVer = atand(SCREEN.heightCM * 0.5 / CAMERA.distance)*2; % degree of view field on vertical
 CAMERA.sightDegreeHor = atand(SCREEN.widthCM * 0.5 / CAMERA.distance)*2; % degree of view field on horizon
+
+% parameter for choice
+choicePeriod = 2; % s
 
 global GL;
 if testMode
@@ -118,21 +126,14 @@ TRIALINFO.fixationPosition{3} = [SCREEN.widthPix/2+degree2pix(TRIALINFO.fixation
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 
 %% the configuration of the Frustum
-FRUSTUM.clipNear = SCREEN.distance; % cm
-FRUSTUM.clipFar = 150*coordinateMuilty; % cm
-FRUSTUM.top = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.heightCM / 2.0);
-FRUSTUM.bottom = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.heightCM / 2.0);
-FRUSTUM.right = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.widthCM / 2.0 );
-FRUSTUM.left = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.widthCM / 2.0 );
-
+calculateFrustum(coordinateMuilty);
 
 Screen('BeginOpenGL', win);
 glViewport(0, 0, RectWidth(winRect), RectHeight(winRect));
 glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
-glMatrixMode(GL.PROJECTION);
-glLoadIdentity;
-glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
-
+% glEnable(GL_BLEND);
+% glEnable(GL_ALPHA_BLEND_CORRECTLY);
+% glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 Screen('EndOpenGL', win);
 
 %% trial conditions and order
@@ -148,7 +149,7 @@ GenerateStarField();
 
 % initial Eyelink
 timePredicted = (TRIALINFO.fixationPeriod + TRIALINFO.pausePeriod + TRIALINFO.preMoveDuration+TRIALINFO.moveDuration + ...
-    TRIALINFO.intertrialInterval) * TRIALINFO.repetition * length(TRIALINFO.motionType) * length(TRIALINFO.rotationDegree) * length(TRIALINFO.headingDegree);
+    TRIALINFO.intertrialInterval + choicePeriod) * TRIALINFO.repetition * length(TRIALINFO.motionType) * length(TRIALINFO.rotationDegree) * length(TRIALINFO.headingDegree);
 calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
 
@@ -170,8 +171,8 @@ if ~testMode
         return
     end
     
-    trialI = Eyelink('Openfile', tempName);
-    if trialI~=0
+    triali = Eyelink('Openfile', tempName);
+    if triali~=0
         fprintf('Cannot create EDF file ''%s'' ', fileName);
         cleanup;
         Eyelink('ShutDown');
@@ -217,15 +218,18 @@ end
 
 trialStTime = zeros(trialNum,1);
 blockSt = tic;
-trialI = 1;
+triali = 1;
 retryFlag = 0;
-
-while trialI <= trialNum
+choice = zeros(trialNum,1); % 0: no choice; 1: choice left; 2: choice right
+choiceTime = zeros(trialNum,1);
+Conditions = cell(trialNum,1);
+while triali <= trialNum
     
     [ ~, ~, keyCode] = KbCheck;
     if keyCode(escape)
         break;
     end
+    
     if ~testMode
         % auto-calibration, force calibration is coded on fixation check period
         if automaticCalibration
@@ -246,7 +250,7 @@ while trialI <= trialNum
         end
     end
     
-    motionTypeI = trialIndex(trialOrder(trialI),1);
+    motionTypeI = trialIndex(trialOrder(triali),1);
     
     % White during the inter-trial intervals
     Screen('FillRect', win ,whiteBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
@@ -257,31 +261,36 @@ while trialI <= trialNum
     [pglX,pglY,pglZ,pfX,pfY,pfZ] = calculatePreMove();
     
     % calculate for movement
-    [glX,glY,glZ,fX,fY,fZ] = calculateMovement(motionTypeI,trialIndex(trialOrder(trialI),:),pglX(end),pglY(end),pglZ(end));
+    [glX,glY,glZ,fX,fY,fZ,thetay2] = calculateMovement(motionTypeI,trialIndex(trialOrder(triali),:),pglX(end),pglY(end),pglZ(end));
     
+    % calculate for binocular 3D
+    [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
+    [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
+            
     % fixationType 1: L to R, 2: stay at center, 3: R to L
     if motionTypeI == 1
         fixationType = 2;
     elseif motionTypeI == 3
         fixationType = 2;
     else
-        fixationType = TRIALINFO.trialConditions{trialIndex(trialOrder(trialI),1)}(trialIndex(trialOrder(trialI),2),4);
+        fixationType = TRIALINFO.trialConditions{trialIndex(trialOrder(triali),1)}(trialIndex(trialOrder(triali),2),4);
     end
     
     % wait for trial interval
     WaitSecs(TRIALINFO.intertrialInterval-toc(trialInterval)); % ITI
     
     Screen('FillRect', win ,blackBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
+    Screen('BlendFunction', win, GL_ONE, GL_ZERO);
     drawFixation(TRIALINFO.fixationPosition{fixationType},TRIALINFO.fixationSizeP,win);
     Screen('Flip', win); % T(-2)
     
     if ~testMode
         % fixation check
         escFlag = fixationCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.fixationWindow),TRIALINFO.fixationPeriod,escape,skipKey,cKey,el);
-        Eyelink('message', ['Moving Start ' num2str(trialI)]);
-        trialStTime(trialI) = toc(blockSt);
+        Eyelink('message', ['Moving Start ' num2str(triali)]);
+        trialStTime(triali) = toc(blockSt);
     else
-        trialStTime(trialI) = toc(blockSt);
+        trialStTime(triali) = toc(blockSt);
         escFlag = 0;
     end
     
@@ -289,31 +298,64 @@ while trialI <= trialNum
         break;
     end
     
-    Screen('BlendFunction', win, GL_ONE, GL_ZERO);
-    
     % for pre-movement
     for f=1:length(pglX)
         
         if(mod(f,1)==0)
             modifyStarField();
         end
+        
+        % adjust binocular deviation
+        [ ~, ~, keyCode] = KbCheck;
+        if keyCode(pageUp)
+            TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
+            disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
+            calculateFrustum(coordinateMuilty);
+            [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
+            [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
+        elseif keyCode(pageDown)
+            if TRIALINFO.deviation > deviationAdjust
+                TRIALINFO.deviation = TRIALINFO.deviation - deviationAdjust;
+                disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
+                calculateFrustum(coordinateMuilty);
+                [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
+                [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
+            end
+        end
+        
+       %% draw for left eye
         Screen('BeginOpenGL', win);
-        glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
+        glColorMask(GL.TRUE, GL.FALSE, GL.FALSE, GL.FALSE);
         glMatrixMode(GL.PROJECTION);
         glLoadIdentity;
-        glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+        glFrustum( FRUSTUM.sinisterLeft,FRUSTUM.sinisterRight, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
         glMatrixMode(GL.MODELVIEW);
         glLoadIdentity;
-        gluLookAt(pglX(f),pglY(f),pglZ(f),pfX(f),pfY(f),pfZ(f),0.0,1.0,0.0);
+        gluLookAt(pglXl(f),pglYl(f),pglZl(f),pglXl(f)+pfXl(f),pglYl(f)+pfYl(f),pglZl(f)+pfZl(f),0.0,1.0,0.0);
         glClearColor(0,0,0,0);
         glColor3f(1,1,0);
-        Screen('EndOpenGL', win);
         
         % draw the fixation point and 3d dots
         DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
-        drawFixation(TRIALINFO.fixationPosition{fixationType},TRIALINFO.fixationSizeP,win);
         
-        % check for eye pursuit
+        %% draw for right eye
+        glColorMask(GL.FALSE, GL.TRUE, GL.FALSE, GL.FALSE);
+        glMatrixMode(GL.PROJECTION);
+        glLoadIdentity;
+        glFrustum( FRUSTUM.dexterLeft,FRUSTUM.dexterRight, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+        glMatrixMode(GL.MODELVIEW);
+        glLoadIdentity;
+        gluLookAt(pglXr(f),pglYr(f),pglZr(f),pglXr(f)+pfXr(f),pglYr(f)+pfYr(f),pglZr(f)+pfZr(f),0.0,1.0,0.0);
+        glClearColor(0,0,0,0);
+        glColor3f(1,1,0);
+        
+        
+        % draw the fixation point and 3d dots for right eye
+        DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
+        Screen('EndOpenGL', win);
+        
+        drawFixation(TRIALINFO.fixationPosition{fixationType},TRIALINFO.fixationSizeP,win);
+       %% check for eye pursuit
         if ~testMode
             retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
         end
@@ -321,6 +363,9 @@ while trialI <= trialNum
             break
         end
         Screen('Flip', win, 0, 0);
+        if f==1
+            WaitSecs(TRIALINFO.pausePeriod);
+        end
     end
         
     if ~retryFlag
@@ -342,25 +387,45 @@ while trialI <= trialNum
         else
             eyePO = [fixX{fixationType}(1),fixY{fixationType}(1)];
         end
-        eyePNew = [fixX{fixationType}(1),fixY{fixationType}(1)];
+        
         % define origin face direction for motion type 4
         if motionTypeI ==4
-            faceDirection = [0;0;-1];
+            faceDirectionL = [fXl(1);fYl(1);fZl(1)];
+            faceDirectionR = [fXr(1);fYr(1);fZr(1)];
         end
         
         for f=1:length(glX)
             if(mod(f,1)==0)
                 modifyStarField();
             end
+            
+            % adjust binocular deviation
+            [ ~, ~, keyCode] = KbCheck;
+            if keyCode(pageUp)
+                TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
+                disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
+                calculateFrustum(coordinateMuilty)
+                [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
+            elseif keyCode(pageDown)
+                if TRIALINFO.deviation > deviationAdjust
+                    TRIALINFO.deviation = TRIALINFO.deviation - deviationAdjust;
+                    disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
+                    calculateFrustum(coordinateMuilty)
+                    [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
+                end
+            end
+            
+           %% draw for left eye
             Screen('BeginOpenGL', win);
-            glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
+            glColorMask(GL.TRUE, GL.FALSE, GL.FALSE, GL.FALSE);
             glMatrixMode(GL.PROJECTION);
             glLoadIdentity;
-            glFrustum( FRUSTUM.left,FRUSTUM.right, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+            glFrustum( FRUSTUM.sinisterLeft,FRUSTUM.sinisterRight, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
             glMatrixMode(GL.MODELVIEW);
             glLoadIdentity;
+            
             if motionTypeI ~= 4
-                gluLookAt(glX(f),glY(f),glZ(f),fX(f),fY(f),fZ(f),0.0,1.0,0.0);
+                gluLookAt(pXl(f),pYl(f),pZl(f),pXl(f)+fXl(f),pYl(f)+fYl(f),pZl(f)+fZl(f),0.0,1.0,0.0);
             elseif motionTypeI == 4
                 if ~testMode
                     for k = 1:10
@@ -383,7 +448,7 @@ while trialI <= trialNum
                             
                             % calculate for rotation on
                             eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
-                            faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
+                            faceDirectionL = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionL);
                             eyePO = eyePNew;
                             eyePT = tic;
                             eyePi = 1;
@@ -398,18 +463,39 @@ while trialI <= trialNum
                     
                     % calculate for rotation on
                     eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
-                    faceDirection = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirection);
+                    faceDirectionL = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionL);
+                    faceDirectionR = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionR);
                     eyePO = eyePNew;
                 end
-                gluLookAt(glX(f),glY(f),glZ(f),glX(f)+faceDirection(1),glY(f)+faceDirection(2),glZ(f)+faceDirection(3),0.0,1.0,0.0);
+                gluLookAt(pXl(f),pYl(f),pZl(f),pXl(f)+faceDirectionL(1),pYl(f)+faceDirectionL(2),pZl(f)+faceDirectionL(3),0.0,1.0,0.0);
             end
             
             glClearColor(0,0,0,0);
             glColor3f(1,1,0);
-            Screen('EndOpenGL', win);
             
             % draw the fixation point
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
+            
+          %% draw for right eye
+            glColorMask(GL.FALSE, GL.TRUE, GL.FALSE, GL.FALSE);
+            glMatrixMode(GL.PROJECTION);
+            glLoadIdentity;
+            glFrustum( FRUSTUM.dexterLeft,FRUSTUM.dexterRight, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+            glMatrixMode(GL.MODELVIEW);
+            glLoadIdentity;
+            
+            if motionTypeI ~= 4
+                gluLookAt(pXr(f),pYr(f),pZr(f),pXr(f)+fXr(f),pYr(f)+fYr(f),pZr(f)+fZr(f),0.0,1.0,0.0);
+            elseif motionTypeI == 4
+                gluLookAt(pXr(f),pYr(f),pZr(f),pXr(f)+faceDirectionR(1),pYr(f)+faceDirectionR(2),pZr(f)+faceDirectionR(3),0.0,1.0,0.0);
+            end
+            
+            glClearColor(0,0,0,0);
+            glColor3f(1,1,0);
+            DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
+            Screen('EndOpenGL', win);
+            
+            % draw the fixation point
             drawFixation([fixX{fixationType}(f),fixY{fixationType}(f)],TRIALINFO.fixationSizeP,win);
             
             % check for eye pursuit
@@ -417,7 +503,7 @@ while trialI <= trialNum
                 retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
             else
                 % simulate eye movement
-                drawFixation(eyePNew,TRIALINFO.fixationSizeP,win);
+%                 drawFixation(eyePNew,TRIALINFO.fixationSizeP,win);
             end
             
             if retryFlag
@@ -426,12 +512,56 @@ while trialI <= trialNum
             Screen('Flip', win, 0, 0);
         end
     end
-
-    if retryFlag
-        trialOrder = [trialOrder, trialOrder(trialI)];
-        trialOrder(trialI) = [];
+    
+    if ~retryFlag
+        % starting choice
+        if ~testMode
+            Eyelink('message', ['Start choice ' num2str(triali)]);
+        end
+        choice(triali) = 0;
+        startChoice = tic;
+        [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
+        Screen('TextBackgroundColor',win, [0 0 0 0]);
+        Screen('DrawingFinished',win);
+        Screen('Flip',win,0,0);
+        while toc(startChoice) <= choicePeriod
+            [ ~, ~, keyCode ] = KbCheck;
+            if keyCode(leftKey)
+                choice(triali) = 1;
+                choiceTime(triali) = toc(startChoice);
+            elseif keyCode(rightKey)
+                choice(triali) = 2;
+                choiceTime(triali) = toc(startChoice);
+            end
+            if choice(triali)
+                break
+            end
+        end
+        if choice(triali)
+            sound(sin(2*pi*25*(1:3000)/200)); % response cue
+            if ~testMode
+                Eyelink('message', ['Decision made ' num2str(triali)]);
+            end
+        else
+            sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+            if ~testMode
+                Eyelink('message', ['Missing ' num2str(triali)]);
+            end
+        end
+    end
+    
+    if retryFlag || ~choice(triali)
+        if ~testMode
+            Eyelink('message', ['Trial repeat ' num2str(triali)]);
+        end
+        trialOrder = [trialOrder, trialOrder(triali)];
+        trialOrder(triali) = [];
     else
-        trialI = trialI + 1;
+        Conditions{triali} = TRIALINFO.trialConditions{trialIndex(trialOrder(triali),1)}(trialIndex(trialOrder(triali),2),:);
+        if ~testMode
+            Eyelink('message', ['Trial complete ' num2str(triali)]);
+        end
+        triali = triali + 1;
     end
     
 end
@@ -463,6 +593,6 @@ if ~testMode
 end
 
 %% save the real and the choiced heading
-% save(fullfile(saveDir,fileName),'upTarget','lowerTarget','fixationPoint','trialStTime','fixationFinTime','choiceStTime','trialEndTime','trialCondition','choiceFinTime','fixDuration','SCREEN','trialDir','distractor');
+save(fullfile(saveDir,fileName),'TRIALINFO','Conditions','SCREEN','CAMERA','choice','choiceTime');
 Screen('CloseAll');
 cd(curdir);
