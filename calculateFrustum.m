@@ -3,7 +3,7 @@ global TRIALINFO;
 global FRUSTUM;
 global SCREEN;
 
-FRUSTUM.clipNear = SCREEN.distance; % cm
+FRUSTUM.clipNear = SCREEN.distance/3*2; % cm
 FRUSTUM.clipFar = 150*coordinateMuilty; % cm
 FRUSTUM.top = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.heightCM / 2.0);
 FRUSTUM.bottom = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.heightCM / 2.0);

@@ -28,7 +28,7 @@ cKey = KbName('c'); % force calibration
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 
 TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
 deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
@@ -142,6 +142,8 @@ trialIndex = repmat(conditionIndex, TRIALINFO.repetition,1);
 trialNum = size(trialIndex,1);
 trialOrder = randperm(trialNum);
 
+disp(['This block has  ' num2str(trialNum) ' trials']);
+
 GenerateStarField();
 
 % calculate for the position of fixation point
@@ -150,6 +152,7 @@ GenerateStarField();
 % initial Eyelink
 timePredicted = (TRIALINFO.fixationPeriod + TRIALINFO.pausePeriod + TRIALINFO.preMoveDuration+TRIALINFO.moveDuration + ...
     TRIALINFO.intertrialInterval + choicePeriod) * TRIALINFO.repetition * length(TRIALINFO.motionType) * length(TRIALINFO.rotationDegree) * length(TRIALINFO.headingDegree);
+disp(['This block will cost  ' num2str(timePredicted/60) ' minutes']);
 calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
 
@@ -224,7 +227,7 @@ choice = zeros(trialNum,1); % 0: no choice; 1: choice left; 2: choice right
 choiceTime = zeros(trialNum,1);
 Conditions = cell(trialNum,1);
 while triali <= trialNum
-    
+    SetMouse(0,0);
     [ ~, ~, keyCode] = KbCheck;
     if keyCode(escape)
         break;
@@ -357,7 +360,7 @@ while triali <= trialNum
         drawFixation(TRIALINFO.fixationPosition{fixationType},TRIALINFO.fixationSizeP,win);
        %% check for eye pursuit
         if ~testMode
-            retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
+            retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow),win);
         end
         if retryFlag
             break
@@ -371,9 +374,6 @@ while triali <= trialNum
     if ~retryFlag
         % for trial movement
         if ~testMode
-            eyePIndex = nan(10,2);
-            eyePT = tic;
-            eyePi = 1;
             
             % extract current eye position
             evt = Eyelink( 'NewestFloatSample');
@@ -428,31 +428,36 @@ while triali <= trialNum
                 gluLookAt(pXl(f),pYl(f),pZl(f),pXl(f)+fXl(f),pYl(f)+fYl(f),pZl(f)+fZl(f),0.0,1.0,0.0);
             elseif motionTypeI == 4
                 if ~testMode
-                    for k = 1:10
-                        if toc(eyePT) < 0.01 && isnan(eyePIndex(end,1)) % 10ms
-                            evt = Eyelink( 'NewestFloatSample');
-                            eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
-                            if eyeUsed ~= -1 % do we know which eye to use yet?
-                                px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
-                                py = evt.gy(eyeUsed+1);
-                                % frameStartTime(i) = evt.time;
+                    eyePT = tic;
+                    eyePIndex = nan(10,2);
+                    for k = 1:11
+                        if toc(eyePT) < 0.010 && isnan(eyePIndex(end,1)) && (k<11) % 10ms
+                            if Eyelink( 'NewFloatSampleAvailable')>0
+                                % get the sample in the form of an event structure                                
+                                evt = Eyelink( 'NewestFloatSample');
+                                eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
+                                if eyeUsed ~= -1 % do we know which eye to use yet?
+                                    px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                                    py = evt.gy(eyeUsed+1);
+                                    % frameStartTime(i) = evt.time;
+                                end
+                                WaitSecs(0.001);
                             end
-                            eyePIndex(eyePi,:) = [px,py];
-                            eyePi = eyePi+1;
+                            eyePIndex(k,:) = [px,py];
+                            disp(['Sample position ' num2str(eyePO)])
                         else
                             % calculate mean position
                             eyePNew = nanmean(eyePIndex,1);
-                            
-                            eyeO2C = eyePO - SCREEN.center;
-                            eyeN2C = eyePNew - SCREEN.center;
-                            
-                            % calculate for rotation on
-                            eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
-                            faceDirectionL = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionL);
-                            eyePO = eyePNew;
-                            eyePT = tic;
-                            eyePi = 1;
-                            eyePIndex = nan(10,2);
+                            if ~isnan(eyePNew)
+                                eyeO2C = eyePO - SCREEN.center;
+                                eyeN2C = eyePNew - SCREEN.center;
+                                
+                                % calculate for rotation on
+                                eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
+                                faceDirectionL = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionL);
+                                faceDirectionR = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionR);
+                                eyePO = eyePNew;
+                            end
                             break
                         end
                     end
@@ -500,7 +505,7 @@ while triali <= trialNum
             
             % check for eye pursuit
             if ~testMode
-                retryFlag = pursuitCheck(TRIALINFO.fixationPosition{fixationType},degree2pix(TRIALINFO.pursuitWindow));
+                retryFlag = pursuitCheck([fixX{fixationType}(f),fixY{fixationType}(f)],degree2pix(TRIALINFO.pursuitWindow),win);
             else
                 % simulate eye movement
 %                 drawFixation(eyePNew,TRIALINFO.fixationSizeP,win);
