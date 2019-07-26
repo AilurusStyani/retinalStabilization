@@ -21,6 +21,8 @@ while 1
         
         if keyCode(cKey) % press C to calibrate
             EyelinkDoTrackerSetup(el);
+            % do a final check of calibration using driftcorrection
+            EyelinkDoDriftCorrection(el);
             Eyelink('StartRecording');
             Eyelink('message', 'SYNCTIME');	 	 % zero-plot time for EDFVIEW
             error=Eyelink('checkrecording'); 		% Check recording status */

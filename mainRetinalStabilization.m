@@ -28,7 +28,7 @@ cKey = KbName('c'); % force calibration
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 
 TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
 deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
@@ -48,7 +48,7 @@ end
 TRIALINFO.repetition = 15;
 TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
 % TRIALINFO.headingDegree = [-10 0 10] ; % degre
-TRIALINFO.headingDegree = [-10 -5 -1 0 1 5 10]; % degree
+TRIALINFO.headingDegree = [-45 -30 -15 0 15 30 45]; % degree
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
 TRIALINFO.fixationSizeD = 0.25;  % degree
@@ -63,7 +63,7 @@ TRIALINFO.preMoveDuration = 0.4; % second
 TRIALINFO.moveDuration = 1; % second
 
 TRIALINFO.fixationWindow = 2; % degree
-TRIALINFO.pursuitWindow = 3; % degree
+TRIALINFO.pursuitWindow = 4; % degree
 
 TRIALINFO.intertrialInterval = 1; % second
 
