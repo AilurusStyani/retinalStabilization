@@ -10,8 +10,8 @@ global SCREEN;
 global FRUSTUM;
 
 %% path name and file name
-subjectName = '';
-fileName = ['retinalStabilization_' subjectName '_' datestr(now,'yymmddHHMM')];
+subjectName = inputdlg({'Please input participant''s initials.'},'1',1);
+fileName = ['retinalStabilization_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
 saveDir = fullfile(pwd,'data');
 mkdir(saveDir);
 curdir = pwd;
@@ -28,7 +28,7 @@ cKey = KbName('c'); % force calibration
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 
 TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
 deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
@@ -76,6 +76,10 @@ TRIALINFO.fixMoveDirection = [1 3]; % only for motion type 2 and 4. 1: left to r
 TRIALINFO.fixationDegree = 4; % degree ¡À to center
 TRIALINFO.fixationInitialDegree = 5; % degree ¡À to center
 TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
+
+% the f is the Head-Referenced value represented the distance from head to HREF plane in unit. It can be used to directly
+% calculate the visual totation degree regardless the screen parameter and the distance from suject to screen.
+fHREF = 15000;
 
 % parameters for the star field
 STARFIELD.dimensionX = 400*coordinateMuilty;  % cm
@@ -188,7 +192,8 @@ if ~testMode
     %	set parser (conservative saccade thresholds)
     Eyelink('command', 'saccade_velocity_threshold = 35');
     Eyelink('command', 'saccade_acceleration_threshold = 9500');
-    Eyelink('command', 'link_sample_data  = LEFT,RIGHT,GAZE,AREA');
+    Eyelink('command', 'link_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,FIXUPDATE,INPUT');
+    Eyelink('command', 'link_sample_data  = LEFT,RIGHT,GAZE,HREF,GAZERES,AREA,STATUS,INPUT,HTARGET');   
     Eyelink('command', 'online_dcorr_refposn = %1d, %1d', SCREEN.center(1), SCREEN.center(2));
     Eyelink('command', 'online_dcorr_maxangle = %1d', 30.0);
     % you must call this function to apply the changes from above
@@ -227,7 +232,29 @@ choice = zeros(trialNum,1); % 0: no choice; 1: choice left; 2: choice right
 choiceTime = zeros(trialNum,1);
 Conditions = cell(trialNum,1);
 while triali <= trialNum
-    SetMouse(0,0);
+    
+    motionTypeI = trialIndex(trialOrder(triali),1);
+    
+    % fixationType 1: L to R, 2: stay at center, 3: R to L
+    if motionTypeI == 1
+        fixationType = 2;
+    elseif motionTypeI == 3
+        fixationType = 2;
+    else
+        fixationType = TRIALINFO.trialConditions{trialIndex(trialOrder(triali),1)}(trialIndex(trialOrder(triali),2),4);
+    end
+    
+    % reset mouse position
+    if testMode
+        if motionTypeI == 4
+            SetMouse(TRIALINFO.fixationPosition{fixationType}(1),TRIALINFO.fixationPosition{fixationType}(2))
+        else
+            SetMouse(0,0);
+        end
+    else
+        SetMouse(0,0);
+    end
+    
     [ ~, ~, keyCode] = KbCheck;
     if keyCode(escape)
         break;
@@ -253,8 +280,6 @@ while triali <= trialNum
         end
     end
     
-    motionTypeI = trialIndex(trialOrder(triali),1);
-    
     % White during the inter-trial intervals
     Screen('FillRect', win ,whiteBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
     Screen('Flip', win,0,0);
@@ -269,15 +294,6 @@ while triali <= trialNum
     % calculate for binocular 3D
     [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
     [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
-            
-    % fixationType 1: L to R, 2: stay at center, 3: R to L
-    if motionTypeI == 1
-        fixationType = 2;
-    elseif motionTypeI == 3
-        fixationType = 2;
-    else
-        fixationType = TRIALINFO.trialConditions{trialIndex(trialOrder(triali),1)}(trialIndex(trialOrder(triali),2),4);
-    end
     
     % wait for trial interval
     WaitSecs(TRIALINFO.intertrialInterval-toc(trialInterval)); % ITI
@@ -379,11 +395,11 @@ while triali <= trialNum
             evt = Eyelink( 'NewestFloatSample');
             eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
             if eyeUsed ~= -1 % do we know which eye to use yet?
-                px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
-                py = evt.gy(eyeUsed+1);
+                hx =evt.hx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                hy = evt.hy(eyeUsed+1);
                 % frameStartTime(i) = evt.time;
             end
-            eyePO = [px,py];
+            eyePO = [hx,hy];
         else
             eyePO = [fixX{fixationType}(1),fixY{fixationType}(1)];
         end
@@ -437,23 +453,22 @@ while triali <= trialNum
                                 evt = Eyelink( 'NewestFloatSample');
                                 eyeUsed = Eyelink('EyeAvailable'); % get eye that's tracked
                                 if eyeUsed ~= -1 % do we know which eye to use yet?
-                                    px =evt.gx(eyeUsed+1); % +1 as we're accessing MATLAB array
-                                    py = evt.gy(eyeUsed+1);
+                                    hx =evt.hx(eyeUsed+1); % +1 as we're accessing MATLAB array
+                                    hy = evt.hy(eyeUsed+1);
                                     % frameStartTime(i) = evt.time;
                                 end
                                 WaitSecs(0.001);
                             end
-                            eyePIndex(k,:) = [px,py];
-                            disp(['Sample position ' num2str(eyePO)])
+                            eyePIndex(k,:) = [hx,hy];
+                            disp(['Sample position ' num2str([hx hy])])
                         else
                             % calculate mean position
                             eyePNew = nanmean(eyePIndex,1);
                             if ~isnan(eyePNew)
-                                eyeO2C = eyePO - SCREEN.center;
-                                eyeN2C = eyePNew - SCREEN.center;
                                 
-                                % calculate for rotation on
-                                eyeRD = (pix2degree(eyeN2C) - pix2degree(eyeO2C));
+                                % calculate for rotation degree
+                                eyeRD = [atand(eyePNew(1)/fHREF)-atand(eyePO(1)/fHREF),atand(eyePNew(2)/fHREF)-atand(eyePO(2)/fHREF)];
+                                
                                 faceDirectionL = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionL);
                                 faceDirectionR = roty(eyeRD(1)) * (rotx(eyeRD(2))*faceDirectionR);
                                 eyePO = eyePNew;
@@ -462,7 +477,7 @@ while triali <= trialNum
                         end
                     end
                 else
-                    eyePNew = [fixX{fixationType}(f),fixY{fixationType}(f)];
+                    [eyePNew(1),eyePNew(2),~] = GetMouse;
                     eyeO2C = eyePO - SCREEN.center;
                     eyeN2C = eyePNew - SCREEN.center;
                     
