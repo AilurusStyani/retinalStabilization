@@ -23,6 +23,9 @@ while 1
             EyelinkDoTrackerSetup(el);
             % do a final check of calibration using driftcorrection
             EyelinkDoDriftCorrection(el);
+           
+            Screen('FillRect', win ,blackBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
+                
             Eyelink('StartRecording');
             Eyelink('message', 'SYNCTIME');	 	 % zero-plot time for EDFVIEW
             error=Eyelink('checkrecording'); 		% Check recording status */

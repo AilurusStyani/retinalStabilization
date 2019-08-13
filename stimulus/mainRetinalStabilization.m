@@ -265,6 +265,12 @@ while triali <= trialNum
         if automaticCalibration
             if toc(calibrateCkeck) >= calibrationInterval
                 EyelinkDoTrackerSetup(el);
+                
+                % do a final check of calibration using driftcorrection
+                EyelinkDoDriftCorrection(el);
+                
+                Screen('FillRect', win ,blackBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
+                
                 Eyelink('StartRecording');
                 Eyelink('message', 'Calibrate Finished');
                 errorCheck=Eyelink('checkrecording'); 		% Check recording status */
