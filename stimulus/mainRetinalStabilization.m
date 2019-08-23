@@ -29,6 +29,8 @@ pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
 testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+feedback = 0; % in practice block, set 1 to provide feedback. otherwise set 0
+feedbackDuration = 1; % unit s
 
 TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
 deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
@@ -38,8 +40,10 @@ coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 SCREEN.distance = 60*coordinateMuilty;% cm
 
 if testMode
-    SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to measure in your own PC
+%     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to measure in your own PC
+%     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to measure in your own PC
+    SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to measure in your own PC
+    SCREEN.heightCM = 30*coordinateMuilty; % cm, need to measure in your own PC
 else
     SCREEN.widthCM = 120*coordinateMuilty; % cm
     SCREEN.heightCM = 65*coordinateMuilty; % cm
@@ -224,6 +228,8 @@ if ~testMode
     WaitSecs(1); % wait a little bit, in case the key press during calibration influence the following keyboard check
 end
 
+HideCursor(SCREEN.screenId);
+
 trialStTime = zeros(trialNum,1);
 blockSt = tic;
 triali = 1;
@@ -247,12 +253,13 @@ while triali <= trialNum
     % reset mouse position
     if testMode
         if motionTypeI == 4
+            ShowCursor('Arrow',SCREEN.screenId);
             SetMouse(TRIALINFO.fixationPosition{fixationType}(1),TRIALINFO.fixationPosition{fixationType}(2))
         else
-            SetMouse(0,0);
+            HideCursor(SCREEN.screenId);
         end
     else
-        SetMouse(0,0);
+        HideCursor(SCREEN.screenId);
     end
     
     [ ~, ~, keyCode] = KbCheck;
@@ -265,12 +272,6 @@ while triali <= trialNum
         if automaticCalibration
             if toc(calibrateCkeck) >= calibrationInterval
                 EyelinkDoTrackerSetup(el);
-                
-                % do a final check of calibration using driftcorrection
-                EyelinkDoDriftCorrection(el);
-                
-                Screen('FillRect', win ,blackBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
-                
                 Eyelink('StartRecording');
                 Eyelink('message', 'Calibrate Finished');
                 errorCheck=Eyelink('checkrecording'); 		% Check recording status */
@@ -541,6 +542,8 @@ while triali <= trialNum
     
     if ~retryFlag
         % starting choice
+        degree = trialIndex(trialOrder(triali),2);
+        correctAnswer = (degree >= 0)+1;
         if ~testMode
             Eyelink('message', ['Start choice ' num2str(triali)]);
         end
@@ -563,15 +566,41 @@ while triali <= trialNum
                 break
             end
         end
-        if choice(triali)
-            sound(sin(2*pi*25*(1:3000)/200)); % response cue
-            if ~testMode
+        if feedback
+            if choice(triali) == correctAnswer
+                sound(sin(2*pi*25*(1:3000)/200)); % correct cue
+                [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
+                if ~testMode
                 Eyelink('message', ['Decision made ' num2str(triali)]);
+                end
+            elseif choice(triali)
+                sound(sin(2*pi*25*(1:3000)/600)); % wrong cue
+                [~, ~, ~] = DrawFormattedText(win, 'Please try again.','center',SCREEN.center(2)/2,[200 20 20]);
+                if ~testMode
+                Eyelink('message', ['Decision made ' num2str(triali)]);
+                end
+            else
+                sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+                [~, ~, ~] = DrawFormattedText(win, 'Oops, you missing this trial.','center',SCREEN.center(2)/2,[200 20 20]);
+                if ~testMode
+                    Eyelink('message', ['Missing ' num2str(triali)]);
+                end
             end
+            Screen('TextBackgroundColor',win, [0 0 0 0]);
+            Screen('DrawingFinished',win);
+            Screen('Flip',win,0,0);
+            WaitSecs(feedbackDuration);
         else
-            sound(sin(2*pi*25*(1:3000)/600)); % missing cue
-            if ~testMode
-                Eyelink('message', ['Missing ' num2str(triali)]);
+            if choice(triali)
+                sound(sin(2*pi*25*(1:3000)/200)); % response cue
+                if ~testMode
+                    Eyelink('message', ['Decision made ' num2str(triali)]);
+                end
+            else
+                sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+                if ~testMode
+                    Eyelink('message', ['Missing ' num2str(triali)]);
+                end
             end
         end
     end
