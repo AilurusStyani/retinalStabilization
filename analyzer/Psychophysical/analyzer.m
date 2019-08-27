@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-filePath = 'C:\Users\Gulab\Desktop\Dhwani\Psychophysics_experiment\data\All';
+filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\TestData';
 edfFile = dir(fullfile(filePath,'*.edf'));
 flipNameStr = 'flip';
 
@@ -84,7 +84,7 @@ for i = 1:length(edfFile)
         headDeg{j}(del,:) = [];
         
         if flipDegree
-            headDeg{j}(:,1) = -headDeg{j}(:,1);
+            headDeg{j} = -headDeg{j};
         end
         
         del = isnan(headSpe{j}(:,1));
@@ -138,7 +138,7 @@ for i = 1:length(edfFile)
         set(gca, 'xlim',[-15,15],'ylim',[0 1])
         xlabel('Heading degree');
         ylabel('Proportion of "right" choice');
-        title([matFile ' condition ' num2str(j)]);
+        title(['Result for condition ' num2str(j)]);
         %     hleg1=legend('choice','mean & standard error','linear result');
         %     set(hleg1,'Location','EastOutside')
         text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
