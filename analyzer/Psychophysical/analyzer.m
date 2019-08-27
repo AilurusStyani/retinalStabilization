@@ -3,6 +3,7 @@ clear all;
 
 filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\TestData';
 edfFile = dir(fullfile(filePath,'*.edf'));
+flipNameStr = 'flip';
 
 popChoice = [];
 for i = 1:length(edfFile)
@@ -10,6 +11,7 @@ for i = 1:length(edfFile)
     data = load(fullfile(filePath,matFile));
     popChoice = cat(1,popChoice,data.choice);
     trialLength = length(data.Conditions);
+    flipDegree = contains(matFile,flipNameStr);
     
     % motion type 1:
     headDeg{1} = nan(trialLength,2);
@@ -80,6 +82,11 @@ for i = 1:length(edfFile)
     for j = 1:4
         del = isnan(headDeg{j}(:,1));
         headDeg{j}(del,:) = [];
+        
+        if flipDegree
+            headDeg{j} = -headDeg{j};
+        end
+        
         del = isnan(headSpe{j}(:,1));
         headSpe{j}(del,:) = [];
         if j == 2 || j == 4
