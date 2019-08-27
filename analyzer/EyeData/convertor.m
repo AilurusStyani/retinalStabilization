@@ -308,11 +308,11 @@ if edf2asc
         
         if i < edfFileNum/4
             curState = 0;
-        elseif i < edfFileNum/2 && i > edfFileNum/4
+        elseif i < edfFileNum/2 && i >= edfFileNum/4
             curState = 1;
-        elseif i < edfFileNum*3/4 && i > edfFileNum/2
+        elseif i < edfFileNum*3/4 && i >= edfFileNum/2
             curState = 2;
-        elseif i > edfFileNum*3/4 && i < edfFileNum
+        elseif i < edfFileNum && i >= edfFileNum*3/4
             curState = 3;
         elseif i == edfFileNum
             curState = 4;
@@ -413,11 +413,11 @@ if asc2mat
         
         if i < ascFileNum/4
             curState = 0;
-        elseif i < ascFileNum/2 && i > ascFileNum/4
+        elseif i < ascFileNum/2 && i >= ascFileNum/4
             curState = 1;
-        elseif i < ascFileNum*3/4 && i > ascFileNum/2
+        elseif i < ascFileNum*3/4 && i >= ascFileNum/2
             curState = 2;
-        elseif i > ascFileNum*3/4 && i < ascFileNum
+        elseif i < ascFileNum && i >= ascFileNum*3/4
             curState = 3;
         elseif i == ascFileNum
             curState = 4;
