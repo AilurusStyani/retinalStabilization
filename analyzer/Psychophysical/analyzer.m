@@ -12,6 +12,8 @@ for i = 1:length(edfFile)
     popChoice = cat(1,popChoice,data.choice);
     trialLength = length(data.Conditions);
     flipDegree = contains(matFile,flipNameStr);
+    num = regexp(matFile, '(\d+)','tokens');
+    subNum = cell2mat(num{1});
     
     % motion type 1:
     headDeg{1} = nan(trialLength,2);
@@ -84,7 +86,7 @@ for i = 1:length(edfFile)
         headDeg{j}(del,:) = [];
         
         if flipDegree
-            headDeg{j} = -headDeg{j};
+            headDeg{j}(:,1) = -headDeg{j}(:,1);
         end
         
         del = isnan(headSpe{j}(:,1));
@@ -138,7 +140,7 @@ for i = 1:length(edfFile)
         set(gca, 'xlim',[-15,15],'ylim',[0 1])
         xlabel('Heading degree');
         ylabel('Proportion of "right" choice');
-        title(['Result for condition ' num2str(j)]);
+        title(['Condition ' num2str(j) ' for participant ' subNum]);
         %     hleg1=legend('choice','mean & standard error','linear result');
         %     set(hleg1,'Location','EastOutside')
         text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
