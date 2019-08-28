@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-filePath = 'C:\Users\Gulab\Desktop\Dhwani\Psychophysics_experiment\data\All';
+filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\data\all';
 edfFile = dir(fullfile(filePath,'*.edf'));
 flipNameStr = 'flip';
 pBias = nan(4,length(edfFile));
@@ -11,6 +11,26 @@ popChoice = [];
 % hPopulation = tight_subplot(2,2,[0.5 0.5]);
 % set(hPopulation,'xtick',[]);
 % set(hPopulation,'ytick',[]);
+
+popHeadDeg{1} = [];
+popHeadSpe{1} = [];
+
+popHeadDeg{2} = [];
+popHeadSpe{2} = [];
+popFixDir{2} = [];
+popFixSpe{2} = [];
+
+popHeadDeg{3} = [];
+popHeadSpe{3} = [];
+popRotationDeg{3} = [];
+popRotationSpe{3} = [];
+
+popHeadDeg{4} = [];
+popHeadSpe{4} = [];
+popFixDir{4} = [];
+popFixSpe{4} = [];
+
+pChoice = [];
 
 for i = 1:length(edfFile)
     matFile = strrep(edfFile(i).name,'.edf','.mat');
@@ -24,38 +44,30 @@ for i = 1:length(edfFile)
     % motion type 1:
     headDeg{1} = nan(trialLength,2);
     headSpe{1} = nan(trialLength,2);
-    popHeadDeg{1} = [];
-    popHeadSpe{1} = [];
+    
     
     % motion type 2:
     headDeg{2} = nan(trialLength,2);
     headSpe{2} = nan(trialLength,2);
     fixDir{2} = nan(trialLength,2);
     fixSpe{2} = nan(trialLength,2);
-    popHeadDeg{2} = [];
-    popHeadSpe{2} = [];
-    popFixDir{2} = [];
-    popFixSpe{2} = [];
+    
     
     % motion type 3:
     headDeg{3} = nan(trialLength,2);
     headSpe{3} = nan(trialLength,2);
     rotationDeg{3} = nan(trialLength,2);
     rotationSpe{3} = nan(trialLength,2);
-    popHeadDeg{3} = [];
-    popHeadSpe{3} = [];
-    popRotationDeg{3} = [];
-    popRotationSpe{3} = [];
+    
     
     % motion type 4:
     headDeg{4} = nan(trialLength,2);
     headSpe{4} = nan(trialLength,2);
     fixDir{4} = nan(trialLength,2);
     fixSpe{4} = nan(trialLength,2);
-    popHeadDeg{4} = [];
-    popHeadSpe{4} = [];
-    popFixDir{4} = [];
-    popFixSpe{4} = [];
+    
+    
+    
     
     for j = 1:trialLength
         
@@ -118,6 +130,7 @@ for i = 1:length(edfFile)
         
         popHeadDeg{j} = cat(1,popHeadDeg{j},headDeg{j});
         popHeadSpe{j} = cat(1,popHeadSpe{j},headSpe{j});
+        pChoice = cat(1,pChoice,data.choice);
     end
     
     % [~,hSubplot1] = tight_subplot(1,4,[0.02 0.02]);
@@ -168,7 +181,7 @@ for i = 1:4
     for k = 1:length(popUniqueDeg{i})
         index = ismember(popHeadDeg{i}(:,1),popUniqueDeg{i}(k));
         trialIndex = popHeadDeg{i}(index,2);
-        choice{k} = data.choice(trialIndex);
+        choice{k} = pChoice(trialIndex);
         pRight{k} = sum(choice{k} == 2)./ length(choice{k});
         choiceTime{k} = length(choice{k});
     end
@@ -183,13 +196,13 @@ for i = 1:4
     plot(popUniqueDeg{i},cell2mat(pRight),'*','color',colorIndex(i,:));
     plot(xi,y_fit,'-','color',colorIndex(i,:));
     set(gca, 'xlim',[-15,15],'ylim',[0 1]);
-    title(['Population result']);
+    title('Population result');
     xlabel('Heading degree');
     ylabel('Proportion of "right" choice');
     %     hleg1=legend('choice','mean & standard error','linear result');
     %     set(hleg1,'Location','EastOutside')
-%     text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
-%     text(5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','b')
+    %     text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
+    %     text(5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','b')
 end
 
 [h_Bias,p_Bias] = ttest2(pBias(1,:),pBias(3,:))
