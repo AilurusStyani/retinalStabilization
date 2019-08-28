@@ -27,11 +27,11 @@ function varargout = convertor(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @convertor_OpeningFcn, ...
-                   'gui_OutputFcn',  @convertor_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @convertor_OpeningFcn, ...
+    'gui_OutputFcn',  @convertor_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -63,7 +63,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = convertor_OutputFcn(hObject, eventdata, handles) 
+function varargout = convertor_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -171,13 +171,18 @@ else
 end
 
 dataFile = dir(fullfile(filePath2,'Converted_*.mat'));
-fileName = cell(length(dataFile),1);
-for i = 1:length(dataFile)
-    fileName{i} = dataFile(i).name;
+if ~isempty(dataFile)
+    fileName = cell(length(dataFile),1);
+    for i = 1:length(dataFile)
+        fileName{i} = dataFile(i).name;
+    end
+    set(handles.fileList,'String',fileName)
+else
+    set(handles.pathLog2,'String','No valid file in this path');
+    set(handles.pathLog2,'ForegroundColor',[1 0 0]);
 end
-set(handles.fileList,'String',fileName)
 cd(functionPath);
-    
+
 
 % --- Executes on selection change in fileList.
 function fileList_Callback(hObject, eventdata, handles)
@@ -210,36 +215,105 @@ fileName = fullfile(filePath2,fileList{fileNum});
 
 clear data
 data = load(fileName);
+log = load(strrep(fileName,'Converted_',''));
+
+dt = min(diff(data.eyeData(:,1)));
+if ~dt
+    dt = 0.5;
+end
 
 if ~isempty(data.eyeData)
-    figure(1)
-    cla;
     
-    plot(data.eyeData(:,2),'r');
-    hold on
-    plot(data.eyeData(:,3),'g');
-    plot(data.eyeData(:,4),'b');
-    
-    if ~isempty(data.movingStart)
-        msIndex = ones(length(data.movingStart(:,1)),1);
-        for i = 1:length(data.movingStart(:,1))
-            msIndex(i) = find(data.movingStart(i,1) <= data.eyeData(:,1),1);
+    conditionIndex = [];
+    fixationDirection = [];
+    for i = 1:length(log.Conditions)
+        if ~isempty(log.Conditions{i})
+            conditionNum = log.Conditions{i}(end);
+            conditionIndex = cat(1,conditionIndex,conditionNum);
+            if conditionNum == 1 || conditionNum == 3
+                fixationDirection = cat(1,fixationDirection,2);
+            else
+                fixationDirection = cat(1,fixationDirection,log.Conditions{i}(end-2));
+            end
         end
-        plot([msIndex msIndex],[0 8000],'--m');
     end
     
-    if ~isempty(data.startChoice)
-        scIndex = ones(length(data.startChoice(:,1)),1);
-        for i = 1:length(data.startChoice(:,1))
-            scIndex(i) = find(data.startChoice(i,1) <= data.eyeData(:,1),1);
+    for i = 1:4
+        figure(2*i-1)
+        cla;
+        hold on
+        
+        trialIndex = find(conditionIndex == i);
+        
+        l = min(length(data.startChoice(:,1)),length(data.movingStart(:,1)));
+        dataLength = max(data.startChoice(1:l,1) - data.movingStart(1:l,1))/dt+100;
+        
+        if i == 1||i==3
+            eyeSet = nan(dataLength,length(trialIndex));
+        else
+            eyeSetL2R = nan(dataLength,length(trialIndex));
+            eyeSetR2L = nan(dataLength,length(trialIndex));
         end
-        plot([scIndex scIndex],[0 8000],'--k');
+        
+        for j = 1:length(trialIndex)
+            st = find(data.movingStart(trialIndex(j),1)<=data.eyeData(:,1),1);
+            ed = find(data.startChoice(trialIndex(j),1)<=data.eyeData(:,1),1);
+            if i==1 || i==3
+                eyeSet(1:(ed-st+1),j) = data.eyeData(st:ed,2)'; % x-axis
+            elseif fixationDirection(trialIndex(j))==1
+                eyeSetL2R(1:(ed-st+1),j) = data.eyeData(st:ed,2)'; % x-axis
+            elseif fixationDirection(trialIndex(j))==3
+                eyeSetR2L(1:(ed-st+1),j) = data.eyeData(st:ed,2)'; % x-axis
+            end
+        end
+        %     plot(data.eyeData(:,2),'r');
+        %     plot(data.eyeData(:,3),'g');
+        %     plot(data.eyeData(:,4),'b');
+        if i==1 || i==3
+            shadedErrorBar(1:dataLength,eyeSet',{@nanmedian,@nanstd},'lineprops', '-b');
+        else
+            shadedErrorBar(1:dataLength,eyeSetL2R',{@nanmedian,@nanstd},'lineprops', '-r');
+            shadedErrorBar(1:dataLength,eyeSetR2L',{@nanmedian,@nanstd},'lineprops', '-g');
+        end
+        ylim('auto');
+        xlim('auto');
+        title(['Condition ' num2str(i)]);
+        
+        figure(2*i)
+        cla;
+        hold on
+        if i==1 || i==3
+            plot(1:dataLength,eyeSet','-b')
+        else
+            plot(1:dataLength,eyeSetL2R','-r');
+            plot(1:dataLength,eyeSetR2L','-g');
+        end
+        ylim('auto');
+        xlim('auto');
+         title(['Condition ' num2str(i)]);
+        
+        %     if ~isempty(data.movingStart)
+        %         msIndex = ones(length(data.movingStart(:,1)),1);
+        %         for i = 1:length(data.movingStart(:,1))
+        %             msIndex(i) = find(data.movingStart(i,1) <= data.eyeData(:,1),1);
+        %         end
+        %         plot([msIndex msIndex],[0 8000],'--m');
+        %     end
+        %
+        %     if ~isempty(data.startChoice)
+        %         scIndex = ones(length(data.startChoice(:,1)),1);
+        %         for i = 1:length(data.startChoice(:,1))
+        %             scIndex(i) = find(data.startChoice(i,1) <= data.eyeData(:,1),1);
+        %         end
+        %         plot([scIndex scIndex],[0 8000],'--k');
+        %     end
+        %     end
     end
 else
     set(handles.pathLog2,'String','No eye data in this file.');
     set(handles.pathLog2,'ForegroundColor',[1 0 0]);
 end
-    
+
 
 
 
