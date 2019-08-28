@@ -1,10 +1,11 @@
 close all;
 clear all;
 
-filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\TestData';
+filePath = 'C:\Users\Gulab\Desktop\Dhwani\Psychophysics_experiment\data\All';
 edfFile = dir(fullfile(filePath,'*.edf'));
 flipNameStr = 'flip';
-
+pBias = nan(4,length(edfFile));
+pThreshold = nan(4,length(edfFile));
 popChoice = [];
 for i = 1:length(edfFile)
     matFile = strrep(edfFile(i).name,'.edf','.mat');
@@ -129,6 +130,8 @@ for i = 1:length(edfFile)
         fitData = [uniqueDeg{j},cell2mat(pRight),cell2mat(choiceTime)];
         
         [bias,threshold] = cum_gaussfit_max1(fitData(1:end,:));
+        pBias(j,i) = bias;
+        pThreshold(j,i) = threshold;
         xi = min(uniqueDeg{j}):0.1:max(uniqueDeg{j});
         y_fit = cum_gaussfit([bias,threshold],xi);
         
@@ -174,7 +177,7 @@ for i = 1:4
     plot(popUniqueDeg{i},cell2mat(pRight),'*');
     plot(xi,y_fit,'-');
     set(gca, 'xlim',[-15,15],'ylim',[0 1]);
-    title(['Popular result for condition ' num2str(i)]);
+    title(['Population result for condition ' num2str(i)]);
     xlabel('Heading degree');
     ylabel('Proportion of "right" choice');
     %     hleg1=legend('choice','mean & standard error','linear result');
@@ -183,3 +186,5 @@ for i = 1:4
     text(5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','b')
 end
 
+[h_Bias,p_Bias] = ttest2(pBias(1,:),pBias(3,:))
+[h_Threshold,p_Threshold] = ttest2(pThreshold(1,:),pThreshold(3,:))
