@@ -11,7 +11,6 @@ popChoice = [];
 % hPopulation = tight_subplot(2,2,[0.5 0.5]);
 % set(hPopulation,'xtick',[]);
 % set(hPopulation,'ytick',[]);
-if ishandle(1000); end; hPopulation = figure(1000); clf; set(gcf,'color','white'); hold on
 
 for i = 1:length(edfFile)
     matFile = strrep(edfFile(i).name,'.edf','.mat');
@@ -159,6 +158,8 @@ end
 
 % draw popular result
 popUniqueDeg = cell(1,4);
+colorIndex = [0 0 0; 1 0.0 0.0; 0 1 0; 0 0 1];
+if ishandle(1000); end; figure(1000); clf; set(gcf,'color','white'); hold on;plot([0,0],[0,1],'-.k');
 for i = 1:4
     popUniqueDeg{i} = unique(popHeadDeg{i}(:,1));
     choice = cell(length(popUniqueDeg{i}),1);
@@ -178,18 +179,17 @@ for i = 1:4
     y_fit = cum_gaussfit([bias,threshold],xi);
     
     
-    plot(hPopulation,[90,90],[0,1],'-.k');
     hold on
-    plot(hPopulation,popUniqueDeg{i},cell2mat(pRight),'*');
-    plot(hPopulation,xi,y_fit,'-');
+    plot(popUniqueDeg{i},cell2mat(pRight),'*','color',colorIndex(i,:));
+    plot(xi,y_fit,'-','color',colorIndex(i,:));
     set(gca, 'xlim',[-15,15],'ylim',[0 1]);
-    title(hPopulation,['Population result for condition ' num2str(i)]);
-    xlabel(hPopulation,'Heading degree');
-    ylabel(hPopulation,'Proportion of "right" choice');
+    title(['Population result']);
+    xlabel('Heading degree');
+    ylabel('Proportion of "right" choice');
     %     hleg1=legend('choice','mean & standard error','linear result');
     %     set(hleg1,'Location','EastOutside')
-    text(hPopulation,5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
-    text(hPopulation,5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','b')
+%     text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
+%     text(5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','b')
 end
 
 [h_Bias,p_Bias] = ttest2(pBias(1,:),pBias(3,:))
