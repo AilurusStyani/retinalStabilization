@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-filePath = 'C:\Users\Gulab\Desktop\Dhwani\Psychophysics_experiment\data\All';
+filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\data\all';
 edfFile = dir(fullfile(filePath,'*.edf'));
 flipNameStr = 'flip';
 pBias = nan(4,length(edfFile));
@@ -244,7 +244,7 @@ for i = 1:4
     
     hold on
     plot(popUniqueDeg{i},cell2mat(pRight),'*','color',colorIndex(i,:));
-    plot(xi,y_fit,'-','color',colorIndex(i,:));
+    h(i) = plot(xi,y_fit,'-','color',colorIndex(i,:));
     set(gca, 'xlim',[-15,15],'ylim',[0 1]);
     title('Population result');
     xlabel('Heading degree');
@@ -254,6 +254,6 @@ for i = 1:4
     %     text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','b')
     %     text(5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','b')
 end
-
+legend(h,'fixation','normal pursuit','simulated pursuit','stabilized pursuit');
 [h_Bias,p_Bias] = ttest2(pBias(1,:),pBias(3,:))
 [h_Threshold,p_Threshold] = ttest2(pThreshold(1,:),pThreshold(3,:))
