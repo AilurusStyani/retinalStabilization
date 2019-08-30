@@ -7,7 +7,7 @@ flipNameStr = 'flip';
 pBias = nan(4,length(edfFile));
 pThreshold = nan(4,length(edfFile));
 popChoice = [];
-
+pI = 0;
 % hPopulation = tight_subplot(2,2,[0.5 0.5]);
 % set(hPopulation,'xtick',[]);
 % set(hPopulation,'ytick',[]);
@@ -30,7 +30,7 @@ popHeadSpe{4} = [];
 popPursuitDir{4} = [];
 popFixSpe{4} = [];
 
-pChoice = [];
+pChoice = cell(4,1);
 
 figureNum = 1;
 for i = 1:length(edfFile)
@@ -129,7 +129,7 @@ for i = 1:length(edfFile)
         
         popHeadDeg{j} = cat(1,popHeadDeg{j},headDeg{j});
         popHeadSpe{j} = cat(1,popHeadSpe{j},headSpe{j});
-        pChoice = cat(1,pChoice,data.choice);
+        pChoice{j} = cat(1,pChoice{j},data.choice(headDeg{j}(:,2)));
     end
     
     % [~,hSubplot1] = tight_subplot(1,4,[0.02 0.02]);
@@ -139,7 +139,7 @@ for i = 1:length(edfFile)
         choiceTime = cell(length(uniqueDeg{j}),1);
         
         if j > 1
-            uniqueDir = unique(pursuitDir{j}(:,1))
+            uniqueDir = unique(pursuitDir{j}(:,1));
             dirLength = length(uniqueDir);
             for dir = 1:dirLength
                 trialIndexI = find(pursuitDir{j}(:,1) == uniqueDir(dir));
@@ -228,10 +228,10 @@ for i = 1:4
     choice = cell(length(popUniqueDeg{i}),1);
     pRight = cell(length(popUniqueDeg{i}),1);
     choiceTime = cell(length(popUniqueDeg{i}),1);
+    pI = pI+length(popHeadDeg{i}(:,1));
     for k = 1:length(popUniqueDeg{i})
-        index = ismember(popHeadDeg{i}(:,1),popUniqueDeg{i}(k));
-        trialIndex = popHeadDeg{i}(index,2);
-        choice{k} = pChoice(trialIndex);
+        index = find(popHeadDeg{i}(:,1) == popUniqueDeg{i}(k));
+        choice{k} = pChoice{i}(index);
         pRight{k} = sum(choice{k} == 2)./ length(choice{k});
         choiceTime{k} = length(choice{k});
     end
