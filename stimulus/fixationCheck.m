@@ -7,7 +7,6 @@ function escFlag = fixationCheck(fixationPoint,eyeTrackerWinP,fixationPeriod,esc
 % skipKey: the key to skip the fixation
 % cKey: the key to force calibration
 % el: eyelink stract
-global SCREEN
 escFlag = 0;
 while 1
     fixationStart = tic;
@@ -24,8 +23,6 @@ while 1
             EyelinkDoTrackerSetup(el);
             % do a final check of calibration using driftcorrection
             EyelinkDoDriftCorrection(el);
-           
-            Screen('FillRect', win ,BlackIndex(SCREEN.screenId),[0 0 SCREEN.widthPix SCREEN.heightPix]);
                 
             Eyelink('StartRecording');
             Eyelink('message', 'SYNCTIME');	 	 % zero-plot time for EDFVIEW

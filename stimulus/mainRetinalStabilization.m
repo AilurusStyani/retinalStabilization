@@ -28,8 +28,8 @@ cKey = KbName('c'); % force calibration
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
-feedback = 0; % in practice block, set 1 to provide feedback. otherwise set 0
+testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
 TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
@@ -103,6 +103,14 @@ CAMERA.sightDegreeHor = atand(SCREEN.widthCM * 0.5 / CAMERA.distance)*2; % degre
 % parameter for choice
 choicePeriod = 2; % s
 
+%% trial conditions and order
+[TRIALINFO.trialConditions,conditionIndex] = calculateConditions();
+trialIndex = repmat(conditionIndex, TRIALINFO.repetition,1);
+trialNum = size(trialIndex,1);
+trialOrder = randperm(trialNum);
+
+disp(['This block has  ' num2str(trialNum) ' trials']);
+
 global GL;
 if testMode
     Screen('Preference', 'SkipSyncTests', 1); % for debug/test
@@ -144,14 +152,6 @@ glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
 % glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 Screen('EndOpenGL', win);
 
-%% trial conditions and order
-[TRIALINFO.trialConditions,conditionIndex] = calculateConditions();
-trialIndex = repmat(conditionIndex, TRIALINFO.repetition,1);
-trialNum = size(trialIndex,1);
-trialOrder = randperm(trialNum);
-
-disp(['This block has  ' num2str(trialNum) ' trials']);
-
 GenerateStarField();
 
 % calculate for the position of fixation point
@@ -182,8 +182,8 @@ if ~testMode
         return
     end
     
-    triali = Eyelink('Openfile', tempName);
-    if triali~=0
+    testi = Eyelink('Openfile', tempName);
+    if testi~=0
         fprintf('Cannot create EDF file ''%s'' ', fileName);
         cleanup;
         Eyelink('ShutDown');
@@ -542,7 +542,7 @@ while triali <= trialNum
     
     if ~retryFlag
         % starting choice
-        degree = trialIndex(trialOrder(triali),2);
+        degree = TRIALINFO.trialConditions{trialIndex(trialOrder(triali),1)}(trialIndex(trialOrder(triali),2),2);
         correctAnswer = (degree >= 0)+1;
         if ~testMode
             Eyelink('message', ['Start choice ' num2str(triali)]);
