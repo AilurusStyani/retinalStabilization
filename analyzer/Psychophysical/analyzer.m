@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\data\all';
+filePath = 'D:\BYC\2019Intern\2019Internship\Dhwani\retinalStabilization\stimulus\data';
 edfFile = dir(fullfile(filePath,'*.edf'));
 flipNameStr = 'flip';
 pBias = nan(4,length(edfFile));
