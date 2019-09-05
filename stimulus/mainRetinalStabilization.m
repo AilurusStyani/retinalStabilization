@@ -32,7 +32,7 @@ testMode = 1; % in test mode, the codes related to Eyelink will be skipped so th
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
-TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
+TRIALINFO.deviation = 4; % initial binocular deviation, cm
 deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
 
 %% parameters
@@ -51,7 +51,7 @@ end
 
 TRIALINFO.repetition = 15;
 TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
-% TRIALINFO.headingDegree = [-10 0 10] ; % degre
+% TRIALINFO.headingDegree = [0] ; % degre
 TRIALINFO.headingDegree = [-45 -30 -15 0 15 30 45]; % degree
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
@@ -77,8 +77,8 @@ TRIALINFO.rotationSpeed = 10;  % ¡ã/s
 
 % for motion type 2 and 4
 TRIALINFO.fixMoveDirection = [1 3]; % only for motion type 2 and 4. 1: left to right; 2: constant at the center; 3: right to left;
-TRIALINFO.fixationDegree = 4; % degree ¡À to center
-TRIALINFO.fixationInitialDegree = 5; % degree ¡À to center
+TRIALINFO.fixationInitialDegree = max(TRIALINFO.rotationDegree/2); % degree ¡À to center
+TRIALINFO.fixationDegree = TRIALINFO.fixationInitialDegree-1; % degree ¡À to center
 TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 
 % the f is the Head-Referenced value represented the distance from head to HREF plane in unit. It can be used to directly
@@ -144,6 +144,8 @@ SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
 
+GenerateStarField();
+
 Screen('BeginOpenGL', win);
 glViewport(0, 0, RectWidth(winRect), RectHeight(winRect));
 glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
@@ -151,8 +153,6 @@ glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
 % glEnable(GL_ALPHA_BLEND_CORRECTLY);
 % glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 Screen('EndOpenGL', win);
-
-GenerateStarField();
 
 % calculate for the position of fixation point
 [fixX,fixY] = calculateFixation();
@@ -254,7 +254,7 @@ while triali <= trialNum
     if testMode
         if motionTypeI == 4
             ShowCursor('Arrow',SCREEN.screenId);
-            SetMouse(TRIALINFO.fixationPosition{fixationType}(1),TRIALINFO.fixationPosition{fixationType}(2))
+            SetMouse(fixX{fixationType}(1),fixY{fixationType}(1))
         else
             HideCursor(SCREEN.screenId);
         end
@@ -293,10 +293,10 @@ while triali <= trialNum
     trialInterval = tic;
     
     % calculate for pre-movement
-    [pglX,pglY,pglZ,pfX,pfY,pfZ] = calculatePreMove();
+    [pglX,pglY,pglZ,pfX,pfY,pfZ,pthetaY] = calculatePreMove(motionTypeI,trialIndex(trialOrder(triali),:));
     
     % calculate for movement
-    [glX,glY,glZ,fX,fY,fZ,thetay2] = calculateMovement(motionTypeI,trialIndex(trialOrder(triali),:),pglX(end),pglY(end),pglZ(end));
+    [glX,glY,glZ,fX,fY,fZ,thetaY] = calculateMovement(motionTypeI,trialIndex(trialOrder(triali),:),pglX(end),pglY(end),pglZ(end),pfX(end),pfY(end),pfZ(end));
     
     % calculate for binocular 3D
     [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
@@ -327,28 +327,28 @@ while triali <= trialNum
     % for pre-movement
     for f=1:length(pglX)
         
-        if(mod(f,1)==0)
-            modifyStarField();
-        end
+%         if(mod(f,1)==0)
+%             modifyStarField();
+%         end
         
         % adjust binocular deviation
         [ ~, ~, keyCode] = KbCheck;
         if keyCode(pageUp)
             TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
             disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
-            calculateFrustum(coordinateMuilty);
             [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
             [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
         elseif keyCode(pageDown)
             if TRIALINFO.deviation > deviationAdjust
                 TRIALINFO.deviation = TRIALINFO.deviation - deviationAdjust;
                 disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
-                calculateFrustum(coordinateMuilty);
                 [pglXl,pglYl,pglZl,pfXl,pfYl,pfZl,pglXr,pglYr,pglZr,pfXr,pfYr,pfZr] = calculateCameraPosition(pglX,pglY,pglZ,pfX,pfY,pfZ);
                 [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
             end
         end
         
+        calculateFrustum(coordinateMuilty,pthetaY(f));
+
        %% draw for left eye
         Screen('BeginOpenGL', win);
         glColorMask(GL.TRUE, GL.FALSE, GL.FALSE, GL.FALSE);
@@ -418,26 +418,26 @@ while triali <= trialNum
         end
         
         for f=1:length(glX)
-            if(mod(f,1)==0)
-                modifyStarField();
-            end
+%             if(mod(f,1)==0)
+%                 modifyStarField();
+%             end
             
             % adjust binocular deviation
             [ ~, ~, keyCode] = KbCheck;
             if keyCode(pageUp)
                 TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
                 disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
-                calculateFrustum(coordinateMuilty)
                 [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
             elseif keyCode(pageDown)
                 if TRIALINFO.deviation > deviationAdjust
                     TRIALINFO.deviation = TRIALINFO.deviation - deviationAdjust;
                     disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
-                    calculateFrustum(coordinateMuilty)
                     [pXl,pYl,pZl,fXl,fYl,fZl,pXr,pYr,pZr,fXr,fYr,fZr] = calculateCameraPosition(glX,glY,glZ,fX,fY,fZ);
                 end
             end
             
+            calculateFrustum(coordinateMuilty,thetaY(f));
+
            %% draw for left eye
             Screen('BeginOpenGL', win);
             glColorMask(GL.TRUE, GL.FALSE, GL.FALSE, GL.FALSE);
