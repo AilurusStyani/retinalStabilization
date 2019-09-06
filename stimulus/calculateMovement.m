@@ -14,7 +14,7 @@ pZ =-(TRIALINFO.headingSpeed .* TRIALINFO.moveDuration ./ frameNum .* cosd(headi
 if motionType == 3
     rotDeg = TRIALINFO.trialConditions{index(1)}(index(2),4);
     alpha =  rotDeg / frameNum;
-    thetaY = alpha*(1:frameNum) - rotDeg/2;
+    thetaY = alpha*(1:frameNum) - TRIALINFO.fixationInitialDegree;
 else
     thetaY = 0*(1:frameNum);
 end

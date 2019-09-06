@@ -20,7 +20,7 @@ else
     fX = -sind(rotDeg/2)*SCREEN.distance*ones(1,frameNum);
     fY = pY;
     fZ = -cosd(rotDeg/2)*SCREEN.distance*ones(1,frameNum);
-    thetaY = ones(1,frameNum) * (-rotDeg/2);
+    thetaY = ones(1,frameNum) * (-TRIALINFO.fixationInitialDegree);
 end
 end
     

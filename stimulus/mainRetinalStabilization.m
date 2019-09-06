@@ -42,17 +42,17 @@ SCREEN.distance = 60*coordinateMuilty;% cm
 if testMode
 %     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to measure in your own PC
 %     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.heightCM = 30*coordinateMuilty; % cm, need to measure in your own PC
+    SCREEN.widthCM = 28.5*coordinateMuilty; % cm, need to measure in your own PC
+    SCREEN.heightCM = 18*coordinateMuilty; % cm, need to measure in your own PC
 else
     SCREEN.widthCM = 120*coordinateMuilty; % cm
     SCREEN.heightCM = 65*coordinateMuilty; % cm
 end
 
 TRIALINFO.repetition = 15;
-TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
-% TRIALINFO.headingDegree = [0] ; % degre
-TRIALINFO.headingDegree = [-45 -30 -15 0 15 30 45]; % degree
+TRIALINFO.motionType = [3]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
+ %TRIALINFO.headingDegree = [0] ; % degre
+TRIALINFO.headingDegree = [ -10 ]; % degree
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
 TRIALINFO.fixationSizeD = 0.25;  % degree
@@ -73,11 +73,12 @@ TRIALINFO.intertrialInterval = 1; % second
 
 % for motion type 3
 TRIALINFO.rotationDegree = [-10 10]; % ¡ã£¬the degree of the star' rotation
-TRIALINFO.rotationSpeed = 10;  % ¡ã/s
+TRIALINFO.rotationSpeed = max(TRIALINFO.rotationDegree)/TRIALINFO.moveDuration;  % ¡ã/s
 
 % for motion type 2 and 4
 TRIALINFO.fixMoveDirection = [1 3]; % only for motion type 2 and 4. 1: left to right; 2: constant at the center; 3: right to left;
-TRIALINFO.fixationInitialDegree = max(TRIALINFO.rotationDegree/2); % degree ¡À to center
+%TRIALINFO.fixationInitialDegree = max(TRIALINFO.rotationDegree/2); % degree ¡À to center
+TRIALINFO.fixationInitialDegree = 0;
 TRIALINFO.fixationDegree = TRIALINFO.fixationInitialDegree-1; % degree ¡À to center
 TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 
@@ -129,6 +130,7 @@ whiteBackground = WhiteIndex(SCREEN.screenId);
 blackBackground = BlackIndex(SCREEN.screenId);
 
 % Open a double-buffered full-screen window on the main displays screen.
+PsychImaging('AddTask','General','UseRetinaResolution');
 [win , winRect] = PsychImaging('OpenWindow', SCREEN.screenId, whiteBackground);
 SCREEN.widthPix = winRect(3);
 SCREEN.heightPix = winRect(4);
@@ -139,8 +141,8 @@ TRIALINFO.fixationPosition{1} = [SCREEN.widthPix/2-degree2pix(TRIALINFO.fixation
 TRIALINFO.fixationPosition{2} = [SCREEN.widthPix/2,SCREEN.heightPix/2];
 TRIALINFO.fixationPosition{3} = [SCREEN.widthPix/2+degree2pix(TRIALINFO.fixationDegree,1),SCREEN.heightPix/2];
 
-SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
-
+%SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
+SCREEN.refreshRate = 60
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
 
