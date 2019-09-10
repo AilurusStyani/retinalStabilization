@@ -73,7 +73,7 @@ TRIALINFO.intertrialInterval = 1; % second
 
 % for motion type 3
 TRIALINFO.rotationDegree = [-10 10]; % ¡ã£¬the degree of the star' rotation
-TRIALINFO.rotationSpeed = 10;  % ¡ã/s
+TRIALINFO.rotationSpeed = max(TRIALINFO.rotationDegree)/TRIALINFO.moveDuration;  % ¡ã/s
 
 % for motion type 2 and 4
 TRIALINFO.fixMoveDirection = [1 3]; % only for motion type 2 and 4. 1: left to right; 2: constant at the center; 3: right to left;
@@ -581,7 +581,7 @@ while triali <= trialNum
                 end
             else
                 sound(sin(2*pi*25*(1:3000)/600)); % missing cue
-                [~, ~, ~] = DrawFormattedText(win, 'Oops, you missing this trial.','center',SCREEN.center(2)/2,[200 20 20]);
+                [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
                 if ~testMode
                     Eyelink('message', ['Missing ' num2str(triali)]);
                 end
