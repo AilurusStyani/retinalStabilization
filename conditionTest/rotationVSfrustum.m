@@ -106,7 +106,7 @@ Screen('Flip', win,0,0);
 triali = 1;
 choice = zeros(trialNum*2,1);
 choiceTime = zeros(trialNum*2,1);
-conditionIndex = nan(length(trialOrder),size(conditions,2));
+conditionIndex = nan(length(trialOrder),size(conditions,2)+1);
 
 while triali <= size(trialIndex,1)
     trialCondition = conditions(trialIndex((triali),1),:);
@@ -212,7 +212,7 @@ while triali <= size(trialIndex,1)
         WaitSecs(feedbackDuration);
     end
     if choice(triali)
-        conditionIndex(triali,:) = trialCondition;
+        conditionIndex(triali,:) = [trialCondition motionType];
         triali = triali+1;
     else
         trialIndex = cat(1,trialIndex,trialIndex(triali,:));
