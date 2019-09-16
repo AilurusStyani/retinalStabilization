@@ -40,10 +40,12 @@ coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 SCREEN.distance = 60*coordinateMuilty;% cm
 
 if testMode
-%     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to measure in your own PC
-%     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.heightCM = 30*coordinateMuilty; % cm, need to measure in your own PC
+% %     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to measure in your own PC
+% %     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to measure in your own PC
+%     SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to measure in your own PC
+%     SCREEN.heightCM = 30*coordinateMuilty; % cm, need to measure in your own PC
+    SCREEN.widthCM = 52.4*coordinateMuilty; % cm, need to measure in your own PC
+    SCREEN.heightCM = 29.4*coordinateMuilty; % cm, need to measure in your own PC
 else
     SCREEN.widthCM = 120*coordinateMuilty; % cm
     SCREEN.heightCM = 65*coordinateMuilty; % cm
