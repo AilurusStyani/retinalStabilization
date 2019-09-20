@@ -88,9 +88,9 @@ TRIALINFO.fixSpeed = TRIALINFO.rotationSpeed;
 fHREF = 15000;
 
 % parameters for the star field
-STARFIELD.dimensionX = 400*coordinateMuilty;  % cm
-STARFIELD.dimensionY = 400*coordinateMuilty;  % cm
-STARFIELD.dimensionZ = 700*coordinateMuilty;  % cm
+STARFIELD.dimensionX = 220*coordinateMuilty;  % cm
+STARFIELD.dimensionY = 220*coordinateMuilty;  % cm
+STARFIELD.dimensionZ = 220*coordinateMuilty;  % cm
 STARFIELD.starSize = 0.1;    % degree
 STARFIELD.density = 1000/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
 
@@ -142,6 +142,7 @@ TRIALINFO.fixationPosition{2} = [SCREEN.widthPix/2,SCREEN.heightPix/2];
 TRIALINFO.fixationPosition{3} = [SCREEN.widthPix/2+degree2pix(TRIALINFO.fixationDegree,1),SCREEN.heightPix/2];
 
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
+SCREEN.frameRate = SCREEN.refreshRate;
 
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
@@ -165,6 +166,8 @@ timePredicted = (TRIALINFO.fixationPeriod + TRIALINFO.pausePeriod + TRIALINFO.pr
 disp(['This block will cost  ' num2str(timePredicted/60) ' minutes']);
 calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
+
+WaitSecs(2)
 
 if ~testMode
     tempName = 'TEMP1'; % need temp name because Eyelink only know hows to save names with 8 chars or less. Will change name using matlab's moveFile later.
@@ -419,6 +422,8 @@ while triali <= trialNum
             faceDirectionR = [fXr(1);fYr(1);fZr(1)];
         end
         
+        framei = nan(1,length(glX));
+        frameT = GetSecs;
         for f=1:length(glX)
 %             if(mod(f,1)==0)
 %                 modifyStarField();
@@ -539,7 +544,11 @@ while triali <= trialNum
                 break
             end
             Screen('Flip', win, 0, 0);
+            framei(f) = GetSecs - frameT;
+            frameT = GetSecs;
         end
+        SCREEN.frameRate = round(1/nanmean(framei));
+        disp(['Frame rate for this trial: ' num2str(SCREEN.frameRate)]);
     end
     
     if ~retryFlag

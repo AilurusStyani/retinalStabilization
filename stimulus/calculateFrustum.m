@@ -4,7 +4,7 @@ global FRUSTUM;
 global SCREEN;
 
 FRUSTUM.clipNear = 50*coordinateMuilty; % cm
-FRUSTUM.clipFar = 150*coordinateMuilty; % cm
+FRUSTUM.clipFar = 100*coordinateMuilty; % cm
 FRUSTUM.top = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.heightCM / 2.0);
 FRUSTUM.bottom = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.heightCM / 2.0);
 

@@ -2,7 +2,7 @@ function [pX,pY,pZ,fX,fY,fZ,thetaY] = calculateMovement(motionType,index,pglX,pg
 global TRIALINFO
 global SCREEN
 
-frameNum = ceil(SCREEN.refreshRate * TRIALINFO.moveDuration);
+frameNum = ceil(SCREEN.frameRate * TRIALINFO.moveDuration);
 headingDegree = TRIALINFO.trialConditions{index(1)}(index(2),2);
 frameOrder = 1:frameNum;
 

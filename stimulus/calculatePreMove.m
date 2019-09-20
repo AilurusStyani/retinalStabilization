@@ -2,7 +2,7 @@ function [pX,pY,pZ,fX,fY,fZ,thetaY] = calculatePreMove(motionType,index)
 global TRIALINFO
 global SCREEN
 
-frameNum = ceil(SCREEN.refreshRate * TRIALINFO.preMoveDuration);
+frameNum = ceil(SCREEN.frameRate * TRIALINFO.preMoveDuration);
 
 frameOrder = 1:frameNum;
 pX = zeros(1,frameNum);
