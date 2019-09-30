@@ -26,8 +26,8 @@ deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
 SCREEN.distance = 60;% cm
 % SCREEN.widthCM = 37.5; % cm, need to measure in your own PC
 % SCREEN.heightCM = 30; % cm, need to measure in your own PC
-SCREEN.widthCM = 18; % cm, need to measure in your own PC
-SCREEN.heightCM = 28; % cm, need to measure in your own PC
+SCREEN.widthCM = 53; % cm, need to measure in your own PC
+SCREEN.heightCM = 30; % cm, need to measure in your own PC
 
 MOVE.degree = [-10 -5 -1 1 5 10]; % бу
 MOVE.velocity = 50; % cm/s
@@ -79,15 +79,14 @@ PsychImaging('PrepareConfiguration');
 
 % Define background color:
 blackBackground = BlackIndex(screenId);
-SCREEN.refreshRate=60;
+
 % Open a double-buffered full-screen window on the main displays screen.
 [win , winRect] = PsychImaging('OpenWindow', screenId, blackBackground);
 SCREEN.widthPix = winRect(3);
 SCREEN.heightPix = winRect(4);
 
 SCREEN.center = [SCREEN.widthPix,SCREEN.heightPix]/2;
-%SCREEN.refreshRate = Screen('NominalFrameRate', screenId);
-
+SCREEN.refreshRate = Screen('NominalFrameRate', screenId);
 fP = [SCREEN.widthPix/2,SCREEN.heightPix/2];
 fixation = [fP(1)-2 fP(2)-2 fP(1)+2 fP(2)+2];
 
@@ -107,7 +106,7 @@ Screen('Flip', win,0,0);
 triali = 1;
 choice = zeros(trialNum*2,1);
 choiceTime = zeros(trialNum*2,1);
-conditionIndex = nan(length(trialOrder),size(conditions,2)+1);
+conditionIndex = nan(length(trialOrder),size(conditions,2));
 
 while triali <= size(trialIndex,1)
     trialCondition = conditions(trialIndex((triali),1),:);
@@ -213,7 +212,7 @@ while triali <= size(trialIndex,1)
         WaitSecs(feedbackDuration);
     end
     if choice(triali)
-        conditionIndex(triali,:) = [trialCondition motionType];
+        conditionIndex(triali,:) = trialCondition;
         triali = triali+1;
     else
         trialIndex = cat(1,trialIndex,trialIndex(triali,:));
