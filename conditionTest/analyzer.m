@@ -17,7 +17,7 @@ popHeadDeg = cell(1,2);
 popPurDir = cell(1,2);
 pChoice = cell(1,2);
 
-colorIndex = {[1 0.1 0.1],[0.8 0.5 0.3];[0.1 0.1 1],[0.3 0.5 0.8]}; % {typeI,dir}
+colorIndex = {[1 0.1 0.1],[0.8 0.5 0.3];[0.1 0.1 1],[0.3 0.5 0.8];[0.1 1 0.1],[0.5 0.8 0.3];[0.1 1 1],[0.3 0.8 0.8]}; % {dir,typeI}
 
 for i = 1:length(matFile)
     
@@ -200,8 +200,10 @@ for typeI =1:length(popHeadDeg)
 end
 legend(h(:),cell2mat(legendText(:)));
 title('Population result');
-[h_Bias,p_Bias] = ttest2(pBias{1},pBias{2})
-[h_Threshold,p_Threshold] = ttest2(pThreshold{1},pThreshold{2})
+[h1_Bias,p1_Bias] = ttest2(pBias{1}(1,:),pBias{2}(1,:))
+[h2_Bias,p2_Bias] = ttest2(pBias{1}(2,:),pBias{2}(2,:))
+[h1_Threshold,p1_Threshold] = ttest2(pThreshold{1}(1,:),pThreshold{2}(1,:))
+[h2_Threshold,p2_Threshold] = ttest2(pThreshold{1}(2,:),pThreshold{2}(2,:))
 
 % originally modified by GY from GCD (cum_gaussfit_max.m)
 function [alpha, beta] = cum_gaussfit_max1(data_cum)
