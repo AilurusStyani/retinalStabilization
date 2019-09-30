@@ -1,3 +1,6 @@
 
 *.mat
 *.asv
+*.ini
+*.edf
+*.asc
