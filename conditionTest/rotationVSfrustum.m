@@ -6,7 +6,7 @@ global MOVE
 
 %% path name and file name
 subjectName = inputdlg({'Please input participant''s initials.'},'1',1);
-fileName = ['retinalStabilization_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
+fileName = ['RvsF_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
 saveDir = fullfile(pwd,'data');
 mkdir(saveDir);
 curdir = pwd;
