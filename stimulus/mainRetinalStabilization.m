@@ -143,6 +143,7 @@ TRIALINFO.fixationPosition{3} = [SCREEN.widthPix/2+degree2pix(TRIALINFO.fixation
 
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 SCREEN.frameRate = SCREEN.refreshRate;
+frameRateBackup = SCREEN.frameRate;
 
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
@@ -409,7 +410,7 @@ while triali <= trialNum
             if eyeUsed ~= -1 % do we know which eye to use yet?
                 hx =evt.hx(eyeUsed+1); % +1 as we're accessing MATLAB array
                 hy = evt.hy(eyeUsed+1);
-                % frameStartTime(i) = evt.time;
+                % StartTime(i) = evt.time;
             end
             eyePO = [hx,hy];
         else
@@ -548,6 +549,12 @@ while triali <= trialNum
             frameT = GetSecs;
         end
         SCREEN.frameRate = round(1/nanmean(framei));
+        if isnan(SCREEN.frameRate)
+            SCREEN.frameRate = frameRateBackup;
+        else
+            frameRateBackup = SCREEN.frameRate;
+        end
+        
         disp(['Frame rate for this trial: ' num2str(SCREEN.frameRate)]);
     end
     
