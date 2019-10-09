@@ -1,7 +1,11 @@
 close all;
 clear all;
 
+<<<<<<< Updated upstream
 filePath = '/Users/fradeshieh/Desktop/matlab/data/9.6';
+=======
+filePath = '/Users/fradeshieh/Desktop/matlab/10.8';
+>>>>>>> Stashed changes
 edfFile = dir(fullfile(filePath,'*.edf'));
 flipNameStr = 'flip';
 pBias = nan(4,length(edfFile));

@@ -28,7 +28,7 @@ cKey = KbName('c'); % force calibration
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
@@ -49,10 +49,17 @@ else
     SCREEN.heightCM = 65*coordinateMuilty; % cm
 end
 
+<<<<<<< Updated upstream
 TRIALINFO.repetition = 15;
 TRIALINFO.motionType = [3]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
  %TRIALINFO.headingDegree = [0] ; % degre
 TRIALINFO.headingDegree = [ -10 ]; % degree
+=======
+TRIALINFO.repetition = 6; % of two block
+TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
+% TRIALINFO.headingDegree = [0] ; % degre
+TRIALINFO.headingDegree = [-10 -5 -1 0 1 5 10]; % degree
+>>>>>>> Stashed changes
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
 TRIALINFO.coherence = 100;
 TRIALINFO.fixationSizeD = 0.25;  % degree
@@ -72,7 +79,7 @@ TRIALINFO.pursuitWindow = 4; % degree
 TRIALINFO.intertrialInterval = 1; % second
 
 % for motion type 3
-TRIALINFO.rotationDegree = [-10 10]; % ¡ã£¬the degree of the star' rotation
+TRIALINFO.rotationDegree = [-7 7]; % ¡ã£¬the degree of the star' rotation
 TRIALINFO.rotationSpeed = max(TRIALINFO.rotationDegree)/TRIALINFO.moveDuration;  % ¡ã/s
 
 % for motion type 2 and 4
