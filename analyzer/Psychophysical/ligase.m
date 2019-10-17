@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-filePath = '/Users/fradeshieh/Desktop/matlab/a1/test';
+filePath = '/Users/fradeshieh/Desktop/matlab/a2/working';
 file = dir(fullfile(filePath,'retinalStabilization_*.mat'));
 flipNameStr = 'flip';
 for i = 1:length(file)

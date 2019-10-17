@@ -1,17 +1,12 @@
 close all;
 clear all;
+filePath = '/Users/fradeshieh/Desktop/matlab/a2/test';
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-filePath = '/Users/fradeshieh/Desktop/matlab/data/9.6';
-=======
-filePath = '/Users/fradeshieh/Desktop/matlab/10.8';
->>>>>>> Stashed changes
-edfFile = dir(fullfile(filePath,'*.edf'));
-=======
-filePath = '/Users/fradeshieh/Desktop/matlab/a1/test';
+edfFile = dir(fullfile(filePath,'*.mat'));
+
+
 file = dir(fullfile(filePath,'retinalStabilization_*.mat'));
->>>>>>> Stashed changes
+
 flipNameStr = 'flip';
 pBias = nan(4,length(edfFile));
 pThreshold = nan(4,length(edfFile));
