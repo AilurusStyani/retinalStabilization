@@ -56,7 +56,7 @@ TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated
 % TRIALINFO.headingDegree = [0] ; % degre
 TRIALINFO.headingDegree = [-45 -30 -15 0 15 30 45]; % degree
 TRIALINFO.headingSpeed = 50*coordinateMuilty; % cm/s
-TRIALINFO.coherence = 100;
+TRIALINFO.coherence = 1;
 TRIALINFO.fixationSizeD = 0.25;  % degree
 
 % fixation period (fixation point only)          --> 
@@ -143,7 +143,6 @@ TRIALINFO.fixationPosition{3} = [SCREEN.widthPix/2+degree2pix(TRIALINFO.fixation
 
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 SCREEN.frameRate = SCREEN.refreshRate;
-frameRateBackup = SCREEN.frameRate;
 
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
@@ -548,11 +547,8 @@ while triali <= trialNum
             framei(f) = GetSecs - frameT;
             frameT = GetSecs;
         end
-        SCREEN.frameRate = round(1/nanmean(framei));
-        if isnan(SCREEN.frameRate)
-            SCREEN.frameRate = frameRateBackup;
-        else
-            frameRateBackup = SCREEN.frameRate;
+        if ~isnan(nanmean(framei))
+            SCREEN.frameRate = round(1/nanmean(framei));
         end
         
         disp(['Frame rate for this trial: ' num2str(SCREEN.frameRate)]);

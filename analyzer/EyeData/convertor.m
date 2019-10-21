@@ -365,10 +365,7 @@ if edf2asc
     edfFiles = dir('*.edf');
     edfFileNum = length(edfFiles);
     
-    state = 0;
-    set(handles.edf2ascLog,'String','Please Wait... 0%');
-    set(handles.edf2ascLog,'ForegroundColor',[0.9 0.7 0]);
-    WaitSecs(0.2);
+    wb1 = waitbar(0,'.EDF to .ASC in processing... 0%','CreateCancelBtn','closereq;return;');
     
     for i = 1:edfFileNum
         edfNamei = edfFiles(i).name;
@@ -380,38 +377,7 @@ if edf2asc
         cmd = [exeCmd 32 edfPathi];
         system(cmd);
         
-        if i < edfFileNum/4
-            curState = 0;
-        elseif i < edfFileNum/2 && i >= edfFileNum/4
-            curState = 1;
-        elseif i < edfFileNum*3/4 && i >= edfFileNum/2
-            curState = 2;
-        elseif i < edfFileNum && i >= edfFileNum*3/4
-            curState = 3;
-        elseif i == edfFileNum
-            curState = 4;
-        end
-        
-        if curState > state
-            if curState == 1
-                set(handles.edf2ascLog,'String','Please Wait... 25%');
-                set(handles.edf2ascLog,'ForegroundColor',[0.9 0.7 0]);
-                WaitSecs(0.2);
-            elseif  curState == 2
-                set(handles.edf2ascLog,'String','Please Wait... 50%');
-                set(handles.edf2ascLog,'ForegroundColor',[0.9 0.7 0]);
-                WaitSecs(0.2);
-            elseif curState == 3
-                set(handles.edf2ascLog,'String','Please Wait... 75%');
-                set(handles.edf2ascLog,'ForegroundColor',[0.9 0.7 0]);
-                WaitSecs(0.2);
-            elseif curState == 4
-                set(handles.edf2ascLog,'String','Mission success.');
-                set(handles.edf2ascLog,'ForegroundColor',[0.2 0.9 0]);
-                WaitSecs(0.2);
-            end
-            state = curState;
-        end
+        waitbar(i/edfFileNum,wb1,['.EDF to .ASC in processing... ' num2str(i/edfFileNum*100) '%']);
     end
 end
 
@@ -420,10 +386,7 @@ if asc2mat
     ascFile = dir('*.asc');
     ascFileNum = length(ascFile);
     
-    state = 0;
-    set(handles.asc2matLog,'String','Please Wait... 0%');
-    set(handles.asc2matLog,'ForegroundColor',[0.9 0.7 0]);
-    WaitSecs(0.5);
+    wb2 = waitbar(0,'.ASC to .MAT in processing... 0%','CreateCancelBtn','closereq;return;');
     
     for i = 1:ascFileNum
         tic;
@@ -485,38 +448,7 @@ if asc2mat
         
         save(saveNamei,'eyeData','movingStart','startChoice','decisionMade','trialComplete','trialRepeat')
         
-        if i < ascFileNum/4
-            curState = 0;
-        elseif i < ascFileNum/2 && i >= ascFileNum/4
-            curState = 1;
-        elseif i < ascFileNum*3/4 && i >= ascFileNum/2
-            curState = 2;
-        elseif i < ascFileNum && i >= ascFileNum*3/4
-            curState = 3;
-        elseif i == ascFileNum
-            curState = 4;
-        end
-        
-        if curState > state
-            if curState == 1
-                set(handles.asc2matLog,'String','Please Wait... 25%');
-                set(handles.asc2matLog,'ForegroundColor',[0.9 0.7 0]);
-                WaitSecs(0.5);
-            elseif  curState == 2
-                set(handles.asc2matLog,'String','Please Wait... 50%');
-                set(handles.asc2matLog,'ForegroundColor',[0.9 0.7 0]);
-                WaitSecs(0.5);
-            elseif curState == 3
-                set(handles.asc2matLog,'String','Please Wait... 75%');
-                set(handles.asc2matLog,'ForegroundColor',[0.9 0.7 0]);
-                WaitSecs(0.5);
-            elseif curState == 4
-                set(handles.asc2matLog,'String','Mission success.');
-                set(handles.asc2matLog,'ForegroundColor',[0.2 0.9 0]);
-                WaitSecs(0.5);
-            end
-            state = curState;
-        end
+        waitbar(i/edfFileNum,wb2,['.ASC to .MAT in processing... ' num2str(i/edfFileNum*100) '%']);
     end
 end
 set(handles.pathLog1,'String','Mission complete.')
