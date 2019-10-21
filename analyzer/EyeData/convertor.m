@@ -22,7 +22,7 @@ function varargout = convertor(varargin)
 
 % Edit the above text to modify the response to help convertor
 
-% Last Modified by GUIDE v2.5 19-Aug-2019 15:34:43
+% Last Modified by GUIDE v2.5 21-Oct-2019 14:12:27
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -96,10 +96,10 @@ function filePath1_Callback(hObject, eventdata, handles)
 % hObject    handle to filePath1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-set(handles.edf2ascLog,'String','');
-set(handles.asc2matLog,'String','');
 % Hints: get(hObject,'String') returns contents of filePath1 as text
 %        str2double(get(hObject,'String')) returns contents of filePath1 as a double
+set(handles.edf2ascLog,'String','');
+set(handles.asc2matLog,'String','');
 
 
 % --- Executes during object creation, after setting all properties.
@@ -379,6 +379,7 @@ if edf2asc
         
         waitbar(i/edfFileNum,wb1,['.EDF to .ASC in processing... ' num2str(i/edfFileNum*100) '%']);
     end
+    delete(wb1);
 end
 
 asc2mat = get(handles.asc2mat,'Value');
@@ -450,8 +451,16 @@ if asc2mat
         
         waitbar(i/edfFileNum,wb2,['.ASC to .MAT in processing... ' num2str(i/edfFileNum*100) '%']);
     end
+    delete(wb2);
 end
-set(handles.pathLog1,'String','Mission complete.')
+if exist('edfFileNum','Var')
+    fileNum = edfFileNum;
+elseif exist('ascFileNum','Var')
+    fileNum = ascFileNum;
+else
+    fileNum = 0;
+end
+set(handles.pathLog1,'String',['Mission complete, ' num2str(fileNum) ' files converted.'])
 set(handles.pathLog1,'ForegroundColor',[0.2 0.9 0]);
 set(handles.filePath2,'String',filePath1);
 cd(functionPath);
@@ -479,3 +488,21 @@ function filePath2_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbutton3.
+function pushbutton3_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+path = uigetdir(pwd);
+set(handles.filePath1,'String',path);
+
+
+% --- Executes on button press in pushbutton5.
+function pushbutton5_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+path = uigetdir(pwd);
+set(handles.filePath2,'String',path);
