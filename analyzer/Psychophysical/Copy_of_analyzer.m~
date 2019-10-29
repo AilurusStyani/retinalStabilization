@@ -199,8 +199,7 @@ for i = 1:length(file)
                 xi = min(uniqueDeg{typei}):0.1:max(uniqueDeg{typei});
                 y_fit = cum_gaussfit([bias,threshold],xi);
                 
-                if ishandle(figureNum); end; figure(figureNum); set(gcf,'color','white');
-                plot([90,90],[0,1],'-.k');
+                
                 hold on
                 plot(uniqueDeg{typei},cell2mat(pRight),'*','color',colorIndex{directioni});
                 plot(xi,y_fit,'-','color',colorIndex{directioni});

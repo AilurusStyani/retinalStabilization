@@ -31,7 +31,8 @@ popPursuitDir{4} = [];
 popFixSpe{4} = [];
 
 pChoice = cell(4,1);
-colorIndex = {[0.8 0.2 0.2],[0.2 0.8 0.2]};
+colorIndex = [0 0 0; 1 0.0 0.0; 0 0.8 0; 0 0 1];
+
 figureNum = 1;
 for i = 1:length(file)
     fileName = file(i).name;
@@ -133,6 +134,8 @@ for i = 1:length(file)
     end
     
     % [~,hSubplot1] = tight_subplot(1,4,[0.02 0.02]);
+    if ishandle(figureNum); end; figure(figureNum); set(gcf,'color','white');
+                plot([90,90],[0,1],'-.k');
     for typei=1:4
         choice = cell(length(uniqueDeg{typei}),1);
         pRight = cell(length(uniqueDeg{typei}),1);
@@ -174,8 +177,8 @@ for i = 1:length(file)
             title(['Condition ' num2str(typei) ' for participant ' subNum]);
             %     hleg1=legend('choice','mean & standard error','linear result');
             %     set(hleg1,'Location','EastOutside')
-            text(5,0.8,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color','k')
-            text(5,0.7,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color','k')
+          
+           
         elseif typei>1
             for directioni = 1:dirLength
                 for k = 1:length(uniqueDeg{typei})
@@ -199,23 +202,22 @@ for i = 1:length(file)
                 xi = min(uniqueDeg{typei}):0.1:max(uniqueDeg{typei});
                 y_fit = cum_gaussfit([bias,threshold],xi);
                 
-                if ishandle(figureNum); end; figure(figureNum); set(gcf,'color','white');
-                plot([90,90],[0,1],'-.k');
+                
                 hold on
-                plot(uniqueDeg{typei},cell2mat(pRight),'*','color',colorIndex{directioni});
-                plot(xi,y_fit,'-','color',colorIndex{directioni});
+                plot(uniqueDeg{typei},cell2mat(pRight),'*','color',colorIndex(typei,:));
+                plot(xi,y_fit,'-','color',colorIndex(typei,:));
                 set(gca, 'xlim',[-15,15],'ylim',[0 1])
                 xlabel('Heading degree');
                 ylabel('Proportion of "right" choice');
                 title(['Condition ' num2str(typei) ' for participant ' subNum]);
                 %     hleg1=legend('choice','mean & standard error','linear result');
                 %     set(hleg1,'Location','EastOutside')
-                text(5,1-0.2*directioni,sprintf('\\it\\mu_{psy} = \\rm%6.3g\\circ',bias),'color',colorIndex{directioni})
-                text(5,0.9-0.2*directioni,sprintf('\\it\\sigma_{psy} = \\rm%6.3g\\circ', threshold),'color',colorIndex{directioni})
+                 
             end
         end
         figureNum = figureNum+1;
     end
+    
 end
 
 % draw popular result

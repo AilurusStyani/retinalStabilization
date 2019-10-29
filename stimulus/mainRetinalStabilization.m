@@ -28,7 +28,7 @@ cKey = KbName('c'); % force calibration
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 0; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
@@ -49,12 +49,12 @@ else
     SCREEN.heightCM = 65*coordinateMuilty; % cm
 end
 
-<<<<<<< Updated upstream
+
 TRIALINFO.repetition = 15;
 TRIALINFO.motionType = [3]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
  %TRIALINFO.headingDegree = [0] ; % degre
 TRIALINFO.headingDegree = [ -10 ]; % degree
-=======
+
 TRIALINFO.repetition = 6; % of two block
 TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
 % TRIALINFO.headingDegree = [0] ; % degre
@@ -297,7 +297,7 @@ while triali <= trialNum
     end
     
     % White during the inter-trial intervals
-    Screen('FillRect', win ,whiteBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
+    Screen('FillRect', win ,[0.8 0.8 0.8],[0 0 SCREEN.widthPix SCREEN.heightPix]);
     Screen('Flip', win,0,0);
     trialInterval = tic;
     
