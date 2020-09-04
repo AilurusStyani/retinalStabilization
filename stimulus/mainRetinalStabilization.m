@@ -39,18 +39,6 @@ deviationAdjust = 0.2; % how fast to adjust the deviation by key pressing, cm
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 SCREEN.distance = 60*coordinateMuilty;% cm
 
-if testMode
-% %     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to measure in your own PC
-% %     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to measure in your own PC
-%     SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to measure in your own PC
-%     SCREEN.heightCM = 30*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.widthCM = 52.4*coordinateMuilty; % cm, need to measure in your own PC
-    SCREEN.heightCM = 29.4*coordinateMuilty; % cm, need to measure in your own PC
-else
-    SCREEN.widthCM = 120*coordinateMuilty; % cm
-    SCREEN.heightCM = 65*coordinateMuilty; % cm
-end
-
 TRIALINFO.repetition = 15;
 TRIALINFO.motionType = [1 2 3 4]; % 1: fixation; 2: normal pursuit; 3: simulated pursuit; 4:stabilized pursuit
 % TRIALINFO.headingDegree = [0] ; % degre
@@ -99,8 +87,6 @@ STARFIELD.probability = TRIALINFO.coherence;
 % parameters for the camera
 CAMERA.elevation = 0*coordinateMuilty; % unit cm, average height of a human
 CAMERA.distance = SCREEN.distance; % unit cm, distance from participant to the screen
-CAMERA.sightDegreeVer = atand(SCREEN.heightCM * 0.5 / CAMERA.distance)*2; % degree of view field on vertical
-CAMERA.sightDegreeHor = atand(SCREEN.widthCM * 0.5 / CAMERA.distance)*2; % degree of view field on horizon
 
 % parameter for choice
 choicePeriod = 2; % s
@@ -125,6 +111,13 @@ InitializeMatlabOpenGL;
 
 SCREEN.screenId = max(Screen('Screens'));
 PsychImaging('PrepareConfiguration');
+
+[width, height] = Screen('DisplaySize', SCREEN.screenId);
+SCREEN.widthCM = width/10; % mm to cm
+SCREEN.heightCM = height/10; % mm to cm
+
+CAMERA.sightDegreeVer = atand(SCREEN.heightCM * 0.5 / CAMERA.distance)*2; % degree of view field on vertical
+CAMERA.sightDegreeHor = atand(SCREEN.widthCM * 0.5 / CAMERA.distance)*2; % degree of view field on horizon
 
 % Define background color:
 whiteBackground = WhiteIndex(SCREEN.screenId);
