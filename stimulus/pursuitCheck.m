@@ -1,6 +1,4 @@
-function retryFlag = pursuitCheck(pursuitPoint,eyeTrackWinP,win)
-global TRIALINFO
-
+function breakFlag = pursuitCheck(pursuitPoint,eyeTrackWinP)
 if Eyelink( 'NewFloatSampleAvailable')>0
     % get the sample in the form of an event structure
     evt = Eyelink( 'NewestFloatSample');
@@ -11,9 +9,9 @@ if Eyelink( 'NewFloatSampleAvailable')>0
     end
 %     drawFixation([px,py],TRIALINFO.fixationSizeP,win);
     if abs((pursuitPoint(1)-px)+(pursuitPoint(2)-py)*1i) > eyeTrackWinP
-        retryFlag=1;
+        breakFlag=1;
     else
-        retryFlag=0;
+        breakFlag=0;
     end
 else
     error('no new eye data')
